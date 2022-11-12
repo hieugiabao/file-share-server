@@ -1,0 +1,27 @@
+{
+  "tasks": [
+    {
+      "type": "cppbuild",
+      "label": "C/C++: gcc-11 build active file",
+      "command": "/usr/bin/gcc-11",
+      "args": [
+        "-g",
+        "-I${workspaceFolder}/includes",
+        "-L${workspaceFolder}/libs",
+        "${workspaceFolder}/src/**/*.c",
+        "-o",
+        "-lm",
+        "${workspaceFolder}/program.out"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": ["$gcc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+    }
+  ],
+  "version": "2.0.0"
+}

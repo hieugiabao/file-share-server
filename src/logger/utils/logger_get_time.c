@@ -10,6 +10,6 @@ char *logger_get_time(void)
     return (NULL);
   tm = time(NULL);
   tm_info = localtime(&tm);
-  strftime(buf, 9, "%H:%M:%S", tm_info);
+  strftime(buf, 23, "%Y-%m-%d %H:%M:%S", tm_info);
   return (buf);
 }

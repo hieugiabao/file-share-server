@@ -63,6 +63,9 @@ SRCS	=	\
 			logger/display/logger_trace.c					\
 			logger/utils/logger_get_time.c				\
 			logger/utils/logger_init_open_file.c	\
+			tftp/header.c													\
+			tftp/tftp_server.c										\
+			tftp/tftp_client_handle.c							\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #
@@ -85,10 +88,10 @@ DIRDEP	=	.deps
 # - Set the default external programs.                                         #
 # ---------------------------------------------------------------------------- #
 
-CC		=	gcc
-AR		=	ar
+CC			=	gcc
+AR			=	ar
 ARFLAGS	=	rc
-RM		=	rm -f
+RM			=	rm -f
 
 # ---------------------------------------------------------------------------- #
 # PROJECT COMPILATION                                                          #
@@ -104,6 +107,7 @@ LIBS		=	\
 LDLIBS		=	\
 
 LDFLAGS		=	\
+				-lm										\
 
 CPPFLAGS	=	\
 				-I $(DIRINC)					\

@@ -1,17 +1,23 @@
 #include "logger/logger.h"
+#include "tftp/tftp_server.h"
+
+void sigintHandler()
+{
+  close_server();
+  log_info("Closing server...");
+  logger_close();
+  exit(0);
+}
 
 int main()
 {
+  signal(SIGINT, sigintHandler);
+
   int ret;
-  if ((ret = logger_init(D_INFO, "log/app.log")) < 0)
+  if ((ret = logger_init(D_INFO, NULL)) < 0)
     return (ret);
-  log_fatal("%s", "fatal message");
-	log_error("%s", "error message");
-	log_warn("%s", "warning message");
-	log_success("%s", "success message");
-	log_info("%s", "info message");
-	log_debug("%s", "debug message");
-	log_trace("%s", "trace message");
-  logger_close();
+  init_server("127.0.0.1", "3069", "upload", 1);
+  serve();
+  close_server();
   return (0);
 }
