@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
 int compare_opcode(const uint8_t *op1, const uint8_t *op2, size_t len) {
     for (size_t i = 0; i < len; i++)
@@ -22,11 +23,19 @@ int compare_opcode(const uint8_t *op1, const uint8_t *op2, size_t len) {
 //   return result;
 // }
 
-int main() {
-    char *c = "\000\003";
-    char d[4];
+uint8_t *__int_to_bytes(int num, size_t len)
+{
+  uint8_t *result = malloc(len);
+  for (int i = 0; i < len; i++)
+  {
+    result[i] = (uint8_t)(num % 256);
+    num /= 256;
+  }
+  return result;
+}
 
-    memcpy(d, c, 2);
-    sprintf(d + 2, "%c%c", 0, 2);
-    printf("%hhX\n", d[1]);
+int main() {
+    int a = 1025;
+    uint8_t *b = __int_to_bytes(a, 2);
+    printf("%hhX%hhx\n", b[1], b[0]);
 }

@@ -31,6 +31,17 @@ int __bytes_to_int(const uint8_t *bytes, size_t len)
   return result;
 }
 
+uint8_t *__int_to_bytes(int num, size_t len)
+{
+  uint8_t *result = malloc(len);
+  for (int i = len - 1; i >= 0; i--)
+  {
+    result[i] = (uint8_t)(num % 256);
+    num /= 256;
+  }
+  return result;
+}
+
 TFTPOptions *_process_option(TFTPClientHandler *handler, uint8_t *options);
 void __map_options(TFTPClientHandler *handler, TFTPOptions *options);
 void free_options(TFTPOptions *options);
@@ -42,7 +53,7 @@ Packet *_recv(TFTPClientHandler *handler, int handle_timeout);
 Packet *_recv_packet(TFTPClientHandler *handler, uint8_t *opcode, int min_data_length, int handle_timeout);
 Packet *_recv_data(TFTPClientHandler *handler, int handle_timeout);
 void _recv_ack(TFTPClientHandler *handler, int handle_timeout, int *block_id);
-uint8_t *_recv_file(TFTPClientHandler *handler);
+void _recv_file(TFTPClientHandler *handler, const char *filename);
 
 void _send_err(TFTPClientHandler *handler, int error_code, char *error_message, const Address *addr);
 void _send(TFTPClientHandler *handler, const uint8_t *data, ssize_t data_len, const Address *addr);
@@ -284,9 +295,16 @@ Packet *_recv_packet_mul(TFTPClientHandler *handler, uint8_t **opcodes, int min_
     packet = _recv(handler, handle_timeout);
     if (packet == NULL)
     {
-      log_error("Client %s: Timeout, no more retries.", handler->_addr.host);
-      free_handler(handler);
-      exit(1);
+      if (handle_timeout != 0)
+      {
+        log_error("Client %s: Timeout, no more retries.", handler->_addr.host);
+        free_handler(handler);
+        exit(1);
+      }
+      else
+      {
+        return NULL;
+      }
     }
     if (handler->_check_addr == 0 || __compare_address(packet->address, handler->_addr) == 1)
       break;
@@ -376,7 +394,11 @@ void _recv_ack(TFTPClientHandler *handler, int handle_timeout, int *block_id)
 
 Packet *_recv_data(TFTPClientHandler *handler, int handle_timeout)
 {
-  return _recv_packet(handler, (uint8_t *)DATA, 2, handle_timeout);
+  Packet *packet = _recv_packet(handler, (uint8_t *)DATA, 2, handle_timeout);
+  packet->block_id = __bytes_to_int(packet->data, 2);
+  memcpy(packet->data, packet->data + 2, packet->data_len - 2);
+  packet->data_len -= 2;
+  return packet;
 }
 
 Packet *_recv_packet(TFTPClientHandler *handler, uint8_t *opcode, int min_data_length, int handle_timeout)
@@ -387,10 +409,68 @@ Packet *_recv_packet(TFTPClientHandler *handler, uint8_t *opcode, int min_data_l
   return _recv_packet_mul(handler, opcodes, min_data_length, handle_timeout);
 }
 
-// uint8_t *_recv_file(TFTPClientHandler *handler)
-// {
+void _recv_file(TFTPClientHandler *handler, const char *filename)
+{
+  int last_id = 0;
 
-// }
+  FILE *file = fopen(filename, "wb");
+
+  if (file == NULL)
+  {
+    _terminate(handler, ACCESS_VIOLATION, "Cannot create file", NULL);
+  }
+
+  int retries = 0;
+  while (retries <= MAX_RETRIES)
+  {
+    int start_last_id = last_id;
+    for (int i = 0; i < handler->_window_size; i++)
+    {
+      Packet *packet = _recv_data(handler, 0);
+      if (packet == NULL)
+      {
+        // timeout
+        if (last_id == start_last_id)
+        {
+          retries ++;
+          break;
+        }
+        else
+          retries = 0;
+      }
+      else
+      {
+        if (packet->block_id == last_id + 1)
+        {
+          last_id = packet->block_id;
+          size_t bytes_written = fwrite(packet->data, 1, packet->data_len, file);
+          if (bytes_written != (size_t)packet->data_len)
+          {
+            // remove file
+            fclose(file);
+            remove(filename);
+            if (errno == EFBIG || errno == ENOSPC)
+              _terminate(handler, DISK_FULL, "Disk full", NULL);
+            else
+              _terminate(handler, UNKNOWN, "Unknown error", NULL);
+          }
+
+          if (packet->block_id == BUF_SIZE)
+            last_id = -1;
+          
+          if (packet->data_len < handler->_block_size)
+          {
+            _send_ack(handler, last_id);
+            return;
+          }
+        }
+      }
+    }
+
+    if (retries <= MAX_RETRIES)
+      _send_ack(handler, last_id == -1 ? BUF_SIZE : last_id);
+  }
+}
 
 void _send(TFTPClientHandler *handler, const uint8_t *data, ssize_t data_len, const Address *addr)
 {
@@ -469,11 +549,9 @@ void _send_oack(TFTPClientHandler *handler, TFTPOptions *options)
 void _send_err(TFTPClientHandler *handler, int error_code, char *error_message, const Address *addr)
 {
   char error_message_bytes[BUF_SIZE];
-  uint8_t error_code_bytes[2];
-  error_code_bytes[0] = (uint8_t)0;
-  error_code_bytes[1] = (uint8_t)error_code;
+  uint8_t *error_code_bytes = __int_to_bytes(error_code, 2);
   memcpy(error_message_bytes, ERROR, 2);
-  sprintf(error_message_bytes + 2, "%s%s%c", error_code_bytes, error_message, (uint8_t)0);
+  sprintf(error_message_bytes + 2, "%c%c%s%c", error_code_bytes[0], error_code_bytes[1], error_message, (uint8_t)0);
   _send(handler, (uint8_t *)error_message_bytes, strlen(error_message) + 5, addr);
 }
 
@@ -533,7 +611,8 @@ void _send_data(TFTPClientHandler *handler, const uint8_t *data, ssize_t data_le
 {
   char *data_bytes = malloc(data_len + 4);
   memcpy(data_bytes, DATA, 2);
-  sprintf(data_bytes + 2, "%c%c", (uint8_t)0, (uint8_t)block_id);
+  uint8_t *block_id_bytes = __int_to_bytes(block_id, 2);
+  sprintf(data_bytes + 2, "%c%c", block_id_bytes[0], block_id_bytes[1]);
   memcpy(data_bytes + 4, data, data_len);
   _send(handler, (uint8_t *)data_bytes, data_len + 4, NULL);
 }
@@ -542,7 +621,8 @@ void _send_ack(TFTPClientHandler *handler, int block_number)
 {
   char *ack_bytes = malloc(4);
   memcpy(ack_bytes, ACK, 2);
-  sprintf(ack_bytes + 2, "%c%c", (uint8_t)0, (uint8_t)block_number);
+  uint8_t *block_number_bytes = __int_to_bytes(block_number, 2);
+  sprintf(ack_bytes + 2, "%c%c", block_number_bytes[0], block_number_bytes[1]);
   _send(handler, (uint8_t *)ack_bytes, 4, NULL);
 }
 
@@ -613,16 +693,13 @@ void __handle_write(TFTPClientHandler *handler, const char *file_name)
   char full_path[128];
   sprintf(full_path, "%s/%s", upload_dir, file_name);
 
-  FILE *file = fopen(full_path, "rb");
-  if (file != NULL)
+  if (access(full_path, F_OK) == 0)
   {
-    char error_message[200];
-    sprintf(error_message, "File already exists: %s", full_path);
-    fclose(file);
-    _terminate(handler, FILE_ALREADY_EXISTS, error_message, NULL);
+    _terminate(handler, FILE_ALREADY_EXISTS, "File already exists", NULL);
   }
 
   _send_ack(handler, 0);
+  _recv_file(handler, full_path);
 }
 
 TFTPOptions *_process_option(TFTPClientHandler *handler, uint8_t *options)

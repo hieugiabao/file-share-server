@@ -52,6 +52,7 @@ typedef struct _packet_buffer_
   uint8_t opcode[2];
   ssize_t data_len;
   Address address;
+  int block_id;
 } Packet;
 
 typedef struct _tftp_options_
