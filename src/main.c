@@ -16,7 +16,7 @@ int main()
   int ret;
   if ((ret = logger_init(D_INFO, NULL)) < 0)
     return (ret);
-  init_server("127.0.0.1", "3069", "upload", 1);
+  init_server("0.0.0.0", "3069", "upload", 1);
   serve();
   close_server();
   return (0);

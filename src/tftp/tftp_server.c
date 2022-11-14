@@ -109,8 +109,12 @@ void serve()
     }
     if (!fork()) // this is the child process
     {
-      close(sock_fd); // child doesn't need the listener
       TFTPClientHandler *handler = create_handler(data, bytes_received, address_buffer, service_buffer);
+      if (handler == NULL)
+      {
+        log_error("Failed to create handler");
+        exit(1);
+      }
       handle_client(handler);
       log_info("Closing connection with %s:%s! Done request", address_buffer, service_buffer);
       free_handler(handler);

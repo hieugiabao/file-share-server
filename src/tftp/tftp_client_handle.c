@@ -127,6 +127,48 @@ TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_s
   else
   {
     log_info("Incoming connection from (%s, %s). Binding at (%s, %ld)", client_address, client_port, inet_ntoa(sin.sin_addr), (uint16_t)ntohs(sin.sin_port));
+
+    // send new socket port to client
+    uint8_t *port_bytes = __int_to_bytes((int)ntohs(sin.sin_port), 2);
+    uint8_t *buffer = malloc(2 + 2);
+    memcpy(buffer, ACK, 2);
+    buffer[2] = port_bytes[0];
+    buffer[3] = port_bytes[1];
+
+    struct addrinfo hints, *peer_address;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_family = AF_UNSPEC;
+
+    if (getaddrinfo(client_address, client_port, &hints, &peer_address))
+    {
+      log_error("getaddrinfo() failed. (%s)", gai_strerror(0));
+      return NULL;
+    }
+    
+    size_t byte_sent = sendto(sock_fd, buffer, 4, 0, peer_address->ai_addr, peer_address->ai_addrlen);
+    if (byte_sent < 1)
+    {
+      log_error("sendto() failed. (%s)", strerror(errno));
+      return NULL;
+    }
+    
+    freeaddrinfo(peer_address);
+    free(buffer);
+    free(port_bytes);
+    close(sock_fd);
+
+    // recv ack
+    struct sockaddr_storage peer_addr;
+    socklen_t peer_addr_len = sizeof(peer_addr);
+    buffer = malloc(4);
+    ssize_t byte_received = recvfrom(handler->_sock, buffer, 4, 0, (struct sockaddr *)&peer_addr, &peer_addr_len);
+    if (byte_received < 1)
+    {
+      log_error("recvfrom() failed. (%s)", strerror(errno));
+      return NULL;
+    }
+    free(buffer);
   }
 
   freeaddrinfo(servinfo);
@@ -641,10 +683,12 @@ void handle_client(TFTPClientHandler *handler)
 
   if (__compare_opcode(opcode, (uint8_t *)RRQ, 2) == 1)
   {
+    log_info("Client (%s:%s): Request get file %s.", handler->_addr.host, handler->_addr.port, file_name);
     __handle_read(handler, file_name);
   }
   else if (__compare_opcode(opcode, (uint8_t *)WRQ, 2) == 1)
   {
+    log_info("Client (%s:%s): Request put file %s.", handler->_addr.host, handler->_addr.port, file_name);
     __handle_write(handler, file_name);
   }
   else
