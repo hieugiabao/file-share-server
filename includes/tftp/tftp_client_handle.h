@@ -4,18 +4,19 @@
 #include "header.h"
 #include "logger/logger.h"
 
-typedef struct _tftp_client_handler_ {
+typedef struct _tftp_client_handler_
+{
   int _sock;
-  Address _addr;
+  struct sockaddr_in *_addr;
   int _block_size;
   int _window_size;
   int _check_addr;
-  Packet *__last_packet;
-  Packet *__packet_buffer;
+  PacketBuffer *__last_packet;
+  PacketBuffer *__packet_buffer;
 } TFTPClientHandler;
 
 void handle_client(TFTPClientHandler *handler);
-TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_size, const char *client_address, const char *port);
+TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_size, struct sockaddr_in *client_address);
 void free_handler(TFTPClientHandler *handler);
 
 #endif

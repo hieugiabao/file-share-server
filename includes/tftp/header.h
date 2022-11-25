@@ -40,20 +40,25 @@ typedef enum _tfpt_error_codes_
   INVALID_OPTIONS
 } TFTPErrorCodes;
 
-typedef struct _address_
+typedef struct _header_
 {
-  char host[256];
-  char port[6];
-} Address;
+  // uint16_t checksum;
+  uint16_t opcode;
+} TFTPHeader;
 
-typedef struct _packet_buffer_
+typedef struct _tftp_packet_
 {
-  uint8_t data[BUF_SIZE - 2];
-  uint8_t opcode[2];
-  ssize_t data_len;
-  Address address;
-  int block_id;
+  TFTPHeader header;
+  uint8_t data[BUF_SIZE - sizeof(TFTPHeader)];
 } Packet;
+
+typedef struct _tftp_packet_buffer_
+{
+  Packet packet;
+  ssize_t data_len;
+  struct sockaddr_in *client_address;
+  int block_id;
+} PacketBuffer;
 
 typedef struct _tftp_options_
 {

@@ -91,17 +91,12 @@ void serve()
   log_info("Waiting for connections...");
   while (1)
   {
-    struct sockaddr_storage client_address;
+    struct sockaddr_in client_address;
     socklen_t client_len = sizeof(client_address);
     uint8_t data[BUF_SIZE];
     int bytes_received = recvfrom(sock_fd, data, BUF_SIZE, 0,
                                   (struct sockaddr *)&client_address, &client_len);
-    char address_buffer[100];
-    char service_buffer[100];
-    getnameinfo((struct sockaddr *)&client_address, client_len,
-                address_buffer, sizeof(address_buffer),
-                service_buffer, sizeof(service_buffer),
-                NI_NUMERICHOST | NI_NUMERICSERV);
+
     if (bytes_received < 1)
     {
       log_error("connection closed by client");
@@ -109,14 +104,14 @@ void serve()
     }
     if (!fork()) // this is the child process
     {
-      TFTPClientHandler *handler = create_handler(data, bytes_received, address_buffer, service_buffer);
+      TFTPClientHandler *handler = create_handler(data, bytes_received, &client_address);
       if (handler == NULL)
       {
         log_error("Failed to create handler");
         exit(1);
       }
       handle_client(handler);
-      log_info("Closing connection with %s:%s! Done request", address_buffer, service_buffer);
+      log_info("Closing connection with %s:%d! Done request", inet_ntoa(client_address.sin_addr), ntohs(client_address.sin_port));
       free_handler(handler);
       exit(0);
     }
