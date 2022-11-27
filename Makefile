@@ -32,7 +32,7 @@
 #                                                                              #
 #                               /!\ WARNING /!\                                #
 #                                                                              #
-# The sections commented with '/!\' are critical, and must not be modified.    # 
+# The sections commented with '/!\' are critical, and must not be modified.    #
 #                                                                              #
 # ---------------------------------------------------------------------------- #
 
@@ -66,6 +66,7 @@ SRCS	=	\
 			tftp/header.c													\
 			tftp/tftp_server.c										\
 			tftp/tftp_client_handle.c							\
+			common/checksum.c 										\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #

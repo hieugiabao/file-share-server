@@ -37,12 +37,13 @@ typedef enum _tfpt_error_codes_
   UNKNOWN_TRANSFER_ID,
   FILE_ALREADY_EXISTS,
   NO_SUCH_USER,
-  INVALID_OPTIONS
+  INVALID_OPTIONS,
+  INVALID_CHECKSUM,
 } TFTPErrorCodes;
 
 typedef struct _header_
 {
-  // uint16_t checksum;
+  uint16_t checksum;
   uint16_t opcode;
 } TFTPHeader;
 
@@ -57,6 +58,7 @@ typedef struct _tftp_packet_buffer_
   Packet packet;
   ssize_t data_len;
   struct sockaddr_in *client_address;
+  uint8_t _raw_data[BUF_SIZE];
   int block_id;
 } PacketBuffer;
 
