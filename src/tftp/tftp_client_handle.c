@@ -584,11 +584,12 @@ void _send_file(TFTPClientHandler *handler, const char *filename, ssize_t buff_s
   int byte_read = 0;
 
   FILE *file = fopen(filename, "rb");
-  uint8_t buffer[handler->_block_size];
+  uint8_t buffer[handler->_block_size * handler->_window_size];
 
+  size_t need = (size_t)(handler->_block_size * handler->_window_size);
   while (1)
   {
-    byte_read = fread(buffer, 1, handler->_block_size * handler->_window_size, file);
+    byte_read = fread(buffer, 1, need, file);
     if (byte_read < 0)
     {
       _terminate(handler, ACCESS_VIOLATION, "Cannot read file", NULL);
@@ -603,7 +604,6 @@ void _send_file(TFTPClientHandler *handler, const char *filename, ssize_t buff_s
     if (_recv_ack(handler, 0, &ack_block_id) == -1)
     {
       fclose(file);
-      remove(filename);
       _terminate(handler, INVALID_CHECKSUM, "Checksum invalid for ack when send file", NULL);
     }
     last_block_id = block_id + handler->_window_size;
@@ -745,7 +745,6 @@ TFTPOptions *_process_option(TFTPClientHandler *handler, uint8_t *options)
   }
   TFTPOptions *head = NULL, *current;
   uint8_t *tmp = options;
-  int i = 0;
   while (isprint((int)*tmp) != 0)
   {
     TFTPOptions *option = malloc(sizeof(TFTPOptions));
@@ -773,9 +772,6 @@ TFTPOptions *_process_option(TFTPClientHandler *handler, uint8_t *options)
       current->next = option;
       current = option;
     }
-    i++;
-    if (i == 2)
-      exit(0);
   }
 
   return head;
