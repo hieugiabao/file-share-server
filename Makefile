@@ -63,10 +63,18 @@ SRCS	=	\
 			logger/display/logger_trace.c					\
 			logger/utils/logger_get_time.c				\
 			logger/utils/logger_init_open_file.c	\
-			networking/tftp/header.c													\
-			networking/tftp/tftp_server.c										\
-			networking/tftp/tftp_client_handle.c							\
-			networking/checksum.c 										\
+			networking/tftp/header.c							\
+			networking/tftp/tftp_server.c					\
+			networking/tftp/tftp_client_handle.c	\
+			networking/checksum.c 								\
+			data_structures/lists/linked_list.c		\
+			data_structures/lists/queue.c					\
+			data_structures/common/node.c					\
+			data_structures/trees/binary_search_tree.c \
+			data_structures/dictionary/entry.c	  \
+			data_structures/dictionary/dictionary.c    \
+			systems/files.c												\
+			systems/thread_pool.c									\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #
