@@ -1,5 +1,5 @@
-#include "tftp/tftp_server.h"
-#include "checksum.h"
+#include "networking/tftp/tftp_server.h"
+#include "networking/checksum.h"
 #include <math.h>
 #include <errno.h>
 #include <ctype.h>

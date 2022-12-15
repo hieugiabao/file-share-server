@@ -1,5 +1,5 @@
 #include "logger/logger.h"
-#include "tftp/tftp_server.h"
+#include "networking.h"
 
 void sigintHandler()
 {

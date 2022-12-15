@@ -1,5 +1,5 @@
 
-#include "tftp/tftp_server.h"
+#include "networking/tftp/tftp_server.h"
 
 int sock_fd = -1; // listen on sock_fd
 int is_upload_allowed = 0;

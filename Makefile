@@ -63,10 +63,10 @@ SRCS	=	\
 			logger/display/logger_trace.c					\
 			logger/utils/logger_get_time.c				\
 			logger/utils/logger_init_open_file.c	\
-			tftp/header.c													\
-			tftp/tftp_server.c										\
-			tftp/tftp_client_handle.c							\
-			common/checksum.c 										\
+			networking/tftp/header.c													\
+			networking/tftp/tftp_server.c										\
+			networking/tftp/tftp_client_handle.c							\
+			networking/checksum.c 										\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #
