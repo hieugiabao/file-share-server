@@ -9,14 +9,14 @@
 
 typedef struct _tftp_client_handler_
 {
-  struct TFTPServer server;
-  struct sockaddr_in *_addr;
-  int _block_size;
-  int _window_size;
-  int _check_addr;
-  PacketBuffer *__last_packet;
-  PacketBuffer *__packet_buffer;
-  jmp_buf buf;
+  struct TFTPServer server;      // The migrate server
+  struct sockaddr_in *_addr;     // The address of the client
+  int _block_size;               // The block size of the packet
+  int _window_size;              // The window size of the packet
+  int _check_addr;               // The flag to check the address
+  PacketBuffer *__last_packet;   // The last packet
+  PacketBuffer *__packet_buffer; // The packet buffer
+  jmp_buf buf;                   // The exception handle signal
 } TFTPClientHandler;
 
 int handle_client(TFTPClientHandler *handler);
