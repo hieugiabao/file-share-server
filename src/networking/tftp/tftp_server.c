@@ -77,7 +77,6 @@ void launch(struct TFTPServer *server)
       log_error("connection closed by client");
       continue;
     }
-    printf("Received %ld bytes.\n", bytes_received);
     // Create an instance of the ClientServer struct.
     struct ClientServer *client_server = malloc(sizeof(struct ClientServer));
     client_server->data = data;
