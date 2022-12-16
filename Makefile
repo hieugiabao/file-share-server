@@ -67,6 +67,7 @@ SRCS	=	\
 			networking/tftp/tftp_server.c					\
 			networking/tftp/tftp_client_handle.c	\
 			networking/checksum.c 								\
+			networking/server.c 									\
 			data_structures/lists/linked_list.c		\
 			data_structures/lists/queue.c					\
 			data_structures/common/node.c					\

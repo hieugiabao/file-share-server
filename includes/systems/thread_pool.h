@@ -25,7 +25,7 @@ struct ThreadPool
 };
 
 // A function for creating a thread pool.
-struct ThreadPool thread_pool_constructor(int num_threads);
+struct ThreadPool *thread_pool_constructor(int num_threads);
 // A function for creating a thread job.
 struct ThreadJob thread_job_constructor(void *(*job)(void *arg), void *arg);
 

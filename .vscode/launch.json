@@ -22,7 +22,8 @@
             "text": "-gdb-set disassembly-flavor intel",
             "ignoreFailures": true
         }
-    ]
+    ],
+    "preLaunchTask": "C/C++: gcc-11 build active file"
   }
   ]
 }

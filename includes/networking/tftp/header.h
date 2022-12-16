@@ -1,16 +1,7 @@
 #ifndef HEADER_H
 #define HEADER_H
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <string.h>
-#include <time.h>
 
 /* TFTP opcodes */
 #define RRQ "\000\001"

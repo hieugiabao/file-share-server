@@ -1,9 +1,9 @@
 #include "logger/logger.h"
 #include "networking.h"
+#include <signal.h>
 
 void sigintHandler()
 {
-  close_server();
   log_info("Closing server...");
   logger_close();
   exit(0);
@@ -16,8 +16,9 @@ int main()
   int ret;
   if ((ret = logger_init(D_INFO, NULL)) < 0)
     return (ret);
-  init_server("0.0.0.0", "3069", "upload", 1);
-  serve();
-  close_server();
+
+  struct TFTPServer server = tftp_server_constructor(INADDR_ANY, 3069, 1, "upload");
+  server.launch(&server);
+
   return (0);
 }

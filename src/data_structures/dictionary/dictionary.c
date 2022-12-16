@@ -54,17 +54,20 @@ void dictionary_destructor(struct Dictionary *dictionary)
  */
 void recursive_dictionary_destroy(struct Node *cursor)
 {
-  if (cursor->prev)
+  if (cursor && cursor->prev)
   {
     recursive_dictionary_destroy(cursor->prev);
   }
-  if (cursor->next)
+  if (cursor && cursor->next)
   {
     recursive_dictionary_destroy(cursor->next);
   }
-  entry_destructor((struct Entry *)cursor->data);
-  free(cursor->data);
-  free(cursor);
+  if (cursor)
+  {
+    entry_destructor((struct Entry *)cursor->data);
+    free(cursor->data);
+    free(cursor);
+  }
 }
 
 /* Public member methods implementation */

@@ -1,5 +1,11 @@
-#include "networking/tftp/tftp_server.h"
+#include "networking/tftp/tftp_client_handle.h"
 #include "networking/checksum.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <time.h>
 #include <math.h>
 #include <errno.h>
 #include <ctype.h>
@@ -54,7 +60,7 @@ void _terminate(TFTPClientHandler *handler, int error_code, const char *message,
 void __handle_read(TFTPClientHandler *handler, const char *file_name);
 void __handle_write(TFTPClientHandler *handler, const char *file_name);
 
-TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_size, struct sockaddr_in *client_address)
+TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_size, struct sockaddr_in *client_address, struct TFTPServer *server)
 {
   TFTPClientHandler *handler = (TFTPClientHandler *)malloc(sizeof(TFTPClientHandler));
   handler->__packet_buffer = malloc(sizeof(Packet));
@@ -63,49 +69,11 @@ TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_s
   handler->_window_size = 1;
   handler->_check_addr = 1;
   handler->_addr = client_address;
-
-  struct addrinfo hints,
-      *servinfo, *p;
-  int rv, yes = 1;
-
-  memset(&hints, 0, sizeof hints);
-  hints.ai_family = AF_INET;
-  hints.ai_socktype = SOCK_DGRAM;
-  hints.ai_flags = AI_PASSIVE; // use my IP
-
-  if ((rv = getaddrinfo(server_host, NULL, &hints, &servinfo)) != 0)
-  {
-    log_error("getaddrinfo: %s", gai_strerror(rv));
-    return NULL;
-  }
-  for (p = servinfo; p != NULL; p = p->ai_next)
-  {
-    if ((handler->_sock = socket(p->ai_family, p->ai_socktype,
-                                 p->ai_protocol)) == -1)
-    {
-      perror("server: socket");
-      continue;
-    }
-
-    if (setsockopt(handler->_sock, SOL_SOCKET, SO_REUSEADDR, &yes,
-                   sizeof(int)) == -1)
-    {
-      perror("setsockopt");
-      return NULL;
-    }
-
-    if ((rv = bind(handler->_sock, p->ai_addr, p->ai_addrlen)) == -1)
-    {
-      close(handler->_sock);
-      perror("server: bind");
-      continue;
-    }
-    break;
-  }
+  handler->server = tftp_server_constructor(server->server.interface, 0, server->is_allow_upload, server->upload_dir);
 
   struct sockaddr_in sin;
   socklen_t len = sizeof(sin);
-  if (getsockname(handler->_sock, (struct sockaddr *)&sin, &len) == -1)
+  if (getsockname(handler->server.server.socket, (struct sockaddr *)&sin, &len) == -1)
     perror("getsockname");
   else
   {
@@ -120,7 +88,7 @@ TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_s
 
     uint16_t checksum = htons(checksum_(6, 0, (uint16_t *)buffer));
     memcpy(buffer, &checksum, 2);
-    size_t byte_sent = sendto(sock_fd, buffer, 6, 0, (struct sockaddr *)client_address, sizeof(struct sockaddr_in));
+    size_t byte_sent = sendto(server->server.socket, buffer, 6, 0, (struct sockaddr *)client_address, sizeof(struct sockaddr_in));
     if (byte_sent < 1)
     {
       log_error("sendto() failed. (%s)", strerror(errno));
@@ -128,13 +96,12 @@ TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_s
     }
 
     free(buffer);
-    close(sock_fd);
 
     // recv ack
     struct sockaddr_in peer_addr;
     socklen_t peer_addr_len = sizeof(peer_addr);
     buffer = malloc(6);
-    ssize_t byte_received = recvfrom(handler->_sock, buffer, 6, 0, (struct sockaddr *)&peer_addr, &peer_addr_len);
+    ssize_t byte_received = recvfrom(handler->server.server.socket, buffer, 6, 0, (struct sockaddr *)&peer_addr, &peer_addr_len);
     if (byte_received < 1)
     {
       log_error("recvfrom() failed. (%s)", strerror(errno));
@@ -143,11 +110,10 @@ TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_s
     free(buffer);
   }
 
-  freeaddrinfo(servinfo);
   struct timeval timeout = {.tv_sec = TIMEOUT_SECOND, .tv_usec = TIMEOUT_USECOND};
-  if (setsockopt(handler->_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+  if (setsockopt(handler->server.server.socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
     perror("setsockopt set receive timeout failed\n");
-  else if (setsockopt(handler->_sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
+  else if (setsockopt(handler->server.server.socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
     perror("setsockopt set send timeout failed\n");
 
   if (initial_buffer != NULL)
@@ -166,7 +132,7 @@ TFTPClientHandler *create_handler(const uint8_t *initial_buffer, size_t buffer_s
 
 void free_handler(TFTPClientHandler *handler)
 {
-  close(handler->_sock);
+  tftp_server_destructor(&handler->server);
   free(handler->__packet_buffer);
   free(handler->__last_packet);
   free(handler);
@@ -185,10 +151,10 @@ char *_error_occurred(TFTPClientHandler *handler, int error_code, char *error_me
 void _terminate(TFTPClientHandler *handler, int error_code, const char *message, char *error_message)
 {
   error_message = _error_occurred(handler, error_code, error_message, NULL);
-  close(handler->_sock);
+  tftp_server_destructor(&handler->server);
 
   log_error("Terminated with error %d: %s; cause: %s", error_code, error_message, message);
-  exit(1);
+  longjmp(handler->buf, 1);
 }
 
 void _check_error(TFTPClientHandler *handler, PacketBuffer *packet_buffer, uint16_t *expected_opcodes)
@@ -199,7 +165,7 @@ void _check_error(TFTPClientHandler *handler, PacketBuffer *packet_buffer, uint1
     uint8_t *error_message = malloc(packet_buffer->data_len - 2);
     memcpy(error_message, packet_buffer->packet.data + 2, packet_buffer->data_len - 2);
     log_error("%s - %s", get_message(error_code), error_message);
-    exit(1);
+    longjmp(handler->buf, 1);
   }
 
   // check opcode in expected opcodes
@@ -236,7 +202,13 @@ PacketBuffer *_recv(TFTPClientHandler *handler, int handle_timeout)
 
     if (handle_timeout == 0)
     {
-      bytes_received = recvfrom(handler->_sock, data, BUF_SIZE, 0,
+
+      struct timeval timeout = {.tv_sec = 0, .tv_usec = 0};
+      if (setsockopt(handler->server.server.socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+        perror("setsockopt set receive timeout failed\n");
+      else if (setsockopt(handler->server.server.socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
+        perror("setsockopt set send timeout failed\n");
+      bytes_received = recvfrom(handler->server.server.socket, data, BUF_SIZE, 0,
                                 (struct sockaddr *)&client_address, &client_len);
       result->client_address = &client_address;
       if (bytes_received == -1)
@@ -251,11 +223,17 @@ PacketBuffer *_recv(TFTPClientHandler *handler, int handle_timeout)
     }
     else
     {
+      struct timeval timeout = {.tv_sec = TIMEOUT_SECOND, .tv_usec = TIMEOUT_USECOND};
+      if (setsockopt(handler->server.server.socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+        perror("setsockopt set receive timeout failed\n");
+      else if (setsockopt(handler->server.server.socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0)
+        perror("setsockopt set send timeout failed\n");
+
       int retries = 0;
 
       while (retries <= MAX_RETRIES)
       {
-        bytes_received = recvfrom(handler->_sock, data, BUF_SIZE, 0,
+        bytes_received = recvfrom(handler->server.server.socket, data, BUF_SIZE, 0,
                                   (struct sockaddr *)&client_address, &client_len);
         result->client_address = &client_address;
         if (bytes_received == -1)
@@ -312,7 +290,7 @@ PacketBuffer *_recv_packet_mul(TFTPClientHandler *handler, uint16_t *opcodes, in
       {
         log_error("Client %s: Timeout, no more retries.", inet_ntoa(handler->_addr->sin_addr));
         free_handler(handler);
-        exit(1);
+        longjmp(handler->buf, 1);
       }
       else
       {
@@ -523,7 +501,7 @@ void _send(TFTPClientHandler *handler, const uint8_t *data, ssize_t data_len, st
 
   while (retries <= MAX_RETRIES)
   {
-    ssize_t byte_sent = sendto(handler->_sock, buffer, data_len + 2, 0,
+    ssize_t byte_sent = sendto(handler->server.server.socket, buffer, data_len + 2, 0,
                                (struct sockaddr *)addr, sizeof(struct sockaddr_in));
     if (byte_sent == -1)
     {
@@ -537,7 +515,7 @@ void _send(TFTPClientHandler *handler, const uint8_t *data, ssize_t data_len, st
       {
         perror("sendto");
         free_handler(handler);
-        exit(1);
+        longjmp(handler->buf, 1);
       }
     }
     else
@@ -548,7 +526,7 @@ void _send(TFTPClientHandler *handler, const uint8_t *data, ssize_t data_len, st
 
   log_error("Client %s: Timeout, no more retries.", inet_ntoa(addr->sin_addr));
   free_handler(handler);
-  exit(1);
+  longjmp(handler->buf, 1);
 }
 
 void _send_oack(TFTPClientHandler *handler, TFTPOptions *options)
@@ -667,27 +645,36 @@ void __resend_last_packet(TFTPClientHandler *handler)
   _send(handler, handler->__last_packet->packet.data, handler->__last_packet->data_len, NULL);
 }
 
-void handle_client(TFTPClientHandler *handler)
+int handle_client(TFTPClientHandler *handler)
 {
   uint16_t opcode;
   char file_name[100];
   char file_mode[10];
 
-  __recv_rq(handler, &opcode, file_name, file_mode);
+  if (!setjmp(handler->buf))
+  {
+    __recv_rq(handler, &opcode, file_name, file_mode);
 
-  if (opcode == *(uint16_t *)RRQ)
-  {
-    log_info("Client (%s:%d): Request get file %s.", inet_ntoa(handler->_addr->sin_addr), ntohs(handler->_addr->sin_port), file_name);
-    __handle_read(handler, file_name);
-  }
-  else if (opcode == *(uint16_t *)WRQ)
-  {
-    log_info("Client (%s:%d): Request put file %s.", inet_ntoa(handler->_addr->sin_addr), ntohs(handler->_addr->sin_port), file_name);
-    __handle_write(handler, file_name);
+    if (opcode == *(uint16_t *)RRQ)
+    {
+      log_info("Client (%s:%d): Request get file %s.", inet_ntoa(handler->_addr->sin_addr), ntohs(handler->_addr->sin_port), file_name);
+      __handle_read(handler, file_name);
+    }
+    else if (opcode == *(uint16_t *)WRQ)
+    {
+      log_info("Client (%s:%d): Request put file %s.", inet_ntoa(handler->_addr->sin_addr), ntohs(handler->_addr->sin_port), file_name);
+      __handle_write(handler, file_name);
+    }
+    else
+    {
+      _terminate(handler, ILLEGAL_OPERATION, "Invalid opcode", NULL);
+    }
+
+    return 0;
   }
   else
   {
-    _terminate(handler, ILLEGAL_OPERATION, "Invalid opcode", NULL);
+    return -1;
   }
 }
 
@@ -721,12 +708,12 @@ void __handle_read(TFTPClientHandler *handler, const char *file_name)
 
 void __handle_write(TFTPClientHandler *handler, const char *file_name)
 {
-  if (is_upload_allowed == 0)
+  if (handler->server.is_allow_upload == 0)
   {
     _terminate(handler, ACCESS_VIOLATION, "Upload not allowed", NULL);
   }
-  char full_path[128];
-  sprintf(full_path, "%s/%s", upload_dir, file_name);
+  char full_path[1024];
+  sprintf(full_path, "%s/%s", handler->server.upload_dir, file_name);
 
   if (access(full_path, F_OK) == 0)
   {

@@ -36,7 +36,7 @@ struct Node node_constructor(void *data, unsigned long size)
  *
  * @param node The node to destroy.
  */
-void node_destroy(struct Node *node)
+void node_destructor(struct Node *node)
 {
   free(node->data);
   free(node);

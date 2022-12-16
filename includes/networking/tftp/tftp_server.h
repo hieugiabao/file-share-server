@@ -1,15 +1,23 @@
 #ifndef TFTP_SERVER_H
 #define TFTP_SERVER_H
 
-#include "tftp_client_handle.h"
+#include "networking/server.h"
 
-extern int sock_fd;
-extern int is_upload_allowed;
-extern char *upload_dir;
-extern char *server_host;
+struct TFTPServer
+{
+  /* Public variables */
 
-int init_server(const char* host, const char *port, const char *root_dir, int allow_upload);
-int close_server();
-void serve(void);
+  struct Server server; // A generic server object to connect to the network with the appropriate protocols.
+  char is_allow_upload; // Whether or not the server allows clients to upload files.
+  char upload_dir[256]; // The directory to upload files to.
+
+  /* Public methods */
+
+  // The launch method starts the server and listens for connections.
+  void (*launch)(struct TFTPServer *server);
+};
+
+struct TFTPServer tftp_server_constructor(u_long interface, int port, char is_allow_upload, char *upload_dir);
+void tftp_server_destructor(struct TFTPServer *server);
 
 #endif

@@ -6,11 +6,11 @@
       "command": "/usr/bin/gcc-11",
       "args": [
         "-g",
-        "-I${workspaceFolder}/includes",
+        "-I${workspaceFolder}/includes/",
         "-L${workspaceFolder}/libs",
         "${workspaceFolder}/src/**/*.c",
-        "-o",
         "-lm",
+        "-o",
         "${workspaceFolder}/program.out"
       ],
       "options": {

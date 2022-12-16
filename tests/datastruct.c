@@ -1,7 +1,81 @@
-#include "data_structures/linked_list.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+struct Node
+{
+  void *data; // The data is stored as a void pointer - casting is required for proper access.
+  // A pointer to the next node in the chain.
+  struct Node *next;
+  struct Node *prev;
+};
+
+// Creating a new node with the data and size passed in.
+struct Node node_constructor(void *data, unsigned long size);
+// Freeing the memory allocated for the node.
+void node_destructor(struct Node *node);
+
+struct LinkedList
+{
+  /* Public variables */
+
+  struct Node *head; // Head points to the first node in the chain.
+  int length;        // Length refers to the number of nodes in the chain.
+
+  /* Public methods */
+
+  // Insert adds new items to the chain at a specified location - this function creates the new nodes.
+  void (*insert)(struct LinkedList *list, int index, void *data, unsigned long size);
+  // Remove an item from the chain at a specified location and deal allocation of memory.
+  void (*remove)(struct LinkedList *list, int index);
+  // Get the data from a node at a specified location.
+  void *(*retrieve)(struct LinkedList *list, int index);
+  // Sorting and searching the list (bubble sort).
+  void (*sort)(struct LinkedList *list, int (*compare)(void *a, void *b));
+  // Binary search. (requires sorted list)
+  short (*search)(struct LinkedList *list, void *query, int (*compare)(void *a, void *b));
+};
+
+// Creating a new linked list.
+struct LinkedList linked_list_constructor(void);
+// Freeing the memory allocated for the linked list.
+void linked_list_destructor(struct LinkedList *list);
+
+/**
+ * It takes a pointer to some data and the size of that data, and returns a node with that data
+ *
+ * @param data The data to be stored in the node.
+ * @param size The size of the data you want to store in the node.
+ *
+ * @return A node.
+ */
+struct Node node_constructor(void *data, unsigned long size)
+{
+  if (size < 1)
+  {
+    fprintf(stderr, "Error: Invalid data size for node...\n");
+    exit(1);
+  }
+
+  struct Node node;
+  node.data = malloc(size);
+  memcpy(node.data, data, size);
+  node.next = NULL;
+  node.prev = NULL;
+
+  return node;
+}
+
+/**
+ * It frees the memory allocated for the data and the node itself
+ *
+ * @param node The node to destroy.
+ */
+void node_destructor(struct Node *node)
+{
+  free(node->data);
+  free(node);
+}
 
 /* Private member methods prototypes */
 
@@ -281,4 +355,13 @@ short binary_search_ll(struct LinkedList *list, void *query, int (*compare)(void
     }
   }
   return 0;
+}
+
+int main()
+{
+  struct LinkedList list = linked_list_constructor();
+  list.insert(&list, 0, "Hello", 6);
+  list.insert(&list, 1, "World", 6);
+
+  printf("%s %s\n", list.retrieve(&list, 0), list.retrieve(&list, 1));
 }
