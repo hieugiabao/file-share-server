@@ -21,7 +21,7 @@ struct Entry entry_constructor(void *key, unsigned long key_size, void *value, u
   struct Entry entry;
   entry.key = malloc(key_size);
   memcpy(entry.key, key, key_size);
-  entry.value = malloc(value_size);
+  entry.value = calloc(value_size, sizeof(void *));
   memcpy(entry.value, value, value_size);
   return entry;
 }

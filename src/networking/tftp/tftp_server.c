@@ -9,8 +9,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-void launch(struct TFTPServer *server);
-void *handler(void *arg);
+void tftp_launch(struct TFTPServer *server);
+void *tftp_handler(void *arg);
 
 /* The client server struct is used as an argument for the handler method. */
 struct ClientServer
@@ -40,7 +40,7 @@ tftp_server_constructor(u_long interface, int port, char is_allow_upload, char *
   tftp_server.server = server_constructor(AF_INET, SOCK_DGRAM, 0, interface, port, 0);
   tftp_server.is_allow_upload = is_allow_upload;
   strcpy(tftp_server.upload_dir, upload_dir);
-  tftp_server.launch = launch;
+  tftp_server.launch = tftp_launch;
 
   return tftp_server;
 }
@@ -52,7 +52,7 @@ tftp_server_constructor(u_long interface, int port, char is_allow_upload, char *
  *
  * @return A pointer to the newly created TFTPServer struct.
  */
-void launch(struct TFTPServer *server)
+void tftp_launch(struct TFTPServer *server)
 {
   if (server->server.socket <= 0)
   {
@@ -84,7 +84,7 @@ void launch(struct TFTPServer *server)
     client_server->client_address = client_address;
     client_server->server = server;
 
-    struct ThreadJob job = thread_job_constructor(handler, client_server);
+    struct ThreadJob job = thread_job_constructor(tftp_handler, client_server);
     thread_pool->add_work(thread_pool, job);
   }
 }
@@ -106,7 +106,7 @@ void tftp_server_destructor(struct TFTPServer *server)
  *
  * @return The return value is a pointer to the thread.
  */
-void *handler(void *arg)
+void *tftp_handler(void *arg)
 {
   log_info("Start handler");
   struct ClientServer *client_server = (struct ClientServer *)arg;

@@ -6,4 +6,6 @@
 #include "networking/tftp.h"
 #include "networking/checksum.h"
 
+#include "networking/http/http_server.h"
+
 #endif /* NETWORKING_H */

@@ -65,7 +65,6 @@ void recursive_dictionary_destroy(struct Node *cursor)
   if (cursor)
   {
     entry_destructor((struct Entry *)cursor->data);
-    free(cursor->data);
     free(cursor);
   }
 }

@@ -17,7 +17,7 @@ int main()
   if ((ret = logger_init(D_INFO, NULL)) < 0)
     return (ret);
 
-  struct TFTPServer server = tftp_server_constructor(INADDR_ANY, 3069, 1, "upload");
+  struct HTTPServer server = http_server_constructor(INADDR_ANY, 8000);
   server.launch(&server);
 
   return (0);

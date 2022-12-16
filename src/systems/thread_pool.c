@@ -8,6 +8,7 @@ void *generic_thread_function(void *arg);
 void add_work(struct ThreadPool *thread_pool, struct ThreadJob job);
 
 /* Construstors */
+
 /**
  * It creates a thread pool with the specified number of threads, and returns a struct ThreadPool
  *
@@ -54,6 +55,7 @@ struct ThreadJob thread_job_constructor(void *(*job)(void *arg), void *arg)
 }
 
 /* destructor */
+
 /**
  * It sets the active flag to 0, signals all the threads to wake up, waits for them to finish, and then frees the thread
  * pool

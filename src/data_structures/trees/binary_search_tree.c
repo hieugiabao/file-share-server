@@ -93,6 +93,11 @@ void destroy_node_bst(struct Node *node)
  */
 struct Node *iterate_bst(struct BinarySearchTree *tree, struct Node *cursor, void *data, int *direction)
 {
+  if (cursor == NULL)
+  {
+    *direction = 1;
+    return NULL;
+  }
   // Compare the cursor's data to the desired data.
   if (tree->compare(cursor->data, data) == 1)
   {
