@@ -47,9 +47,9 @@ int main()
   }
   else
   {
-    // thread_pool_destructor(pool);
     tftp_server_destructor(&tftp_server);
     http_server_destructor(&http_server);
+    thread_pool_destructor(pool);
     log_info("Closing server...");
     logger_close();
     exit(0);

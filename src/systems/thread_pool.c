@@ -73,6 +73,7 @@ void thread_pool_destructor(struct ThreadPool *thread_pool)
   }
   for (int i = 0; i < thread_pool->num_threads; i++)
   {
+    pthread_cancel(thread_pool->pool[i]);
     pthread_join(thread_pool->pool[i], NULL);
   }
   free(thread_pool->pool);

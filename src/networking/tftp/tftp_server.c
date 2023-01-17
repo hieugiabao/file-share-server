@@ -98,6 +98,8 @@ void tftp_launch(struct TFTPServer *server)
  */
 void tftp_server_destructor(struct TFTPServer *server)
 {
+  if (server->thread_pool != NULL)
+    thread_pool_destructor(server->thread_pool);
   server_destructor(&server->server);
 }
 
