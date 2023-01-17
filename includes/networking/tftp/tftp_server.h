@@ -2,14 +2,16 @@
 #define TFTP_SERVER_H
 
 #include "networking/server.h"
+#include "systems/thread_pool.h"
 
 struct TFTPServer
 {
   /* Public variables */
 
-  struct Server server; // A generic server object to connect to the network with the appropriate protocols.
-  char is_allow_upload; // Whether or not the server allows clients to upload files.
-  char upload_dir[256]; // The directory to upload files to.
+  struct Server server;           // A generic server object to connect to the network with the appropriate protocols.
+  char is_allow_upload;           // Whether or not the server allows clients to upload files.
+  char upload_dir[256];           // The directory to upload files to.
+  struct ThreadPool *thread_pool; // A thread pool to handle clients.
 
   /* Public methods */
 

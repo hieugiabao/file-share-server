@@ -41,7 +41,9 @@ tftp_server_constructor(u_long interface, int port, char is_allow_upload, char *
   tftp_server.is_allow_upload = is_allow_upload;
   strcpy(tftp_server.upload_dir, upload_dir);
   tftp_server.launch = tftp_launch;
+  tftp_server.thread_pool = NULL;
 
+  log_info("TFTP Server is initialized at %s:%d", inet_ntoa(tftp_server.server.address.sin_addr), ntohs(tftp_server.server.address.sin_port));
   return tftp_server;
 }
 
@@ -61,12 +63,12 @@ void tftp_launch(struct TFTPServer *server)
   }
   // Initialize a thread pool to handle clients.
   struct ThreadPool *thread_pool = thread_pool_constructor(10);
+  server->thread_pool = thread_pool;
   struct sockaddr_in client_address;
   socklen_t client_len = sizeof(client_address);
   uint8_t data[BUF_SIZE];
 
-  log_info("Server is initialized at %s:%d", inet_ntoa(server->server.address.sin_addr), ntohs(server->server.address.sin_port));
-  log_info("Waiting for connections...");
+  log_info("TFTP server launched... Waiting for connections...");
   while (1)
   {
     size_t bytes_received = recvfrom(server->server.socket, data, BUF_SIZE, 0,
@@ -108,7 +110,6 @@ void tftp_server_destructor(struct TFTPServer *server)
  */
 void *tftp_handler(void *arg)
 {
-  log_info("Start handler");
   struct ClientServer *client_server = (struct ClientServer *)arg;
   TFTPClientHandler *handler = create_handler(client_server->data, client_server->bytes_received, &client_server->client_address, client_server->server);
   if (handler == NULL)

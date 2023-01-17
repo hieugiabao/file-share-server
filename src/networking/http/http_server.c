@@ -64,9 +64,21 @@ struct HTTPServer http_server_constructor(u_long interface, int port)
   server.routes = dictionary_constructor(compare_string_keys);
   server.register_routes = register_routes;
   server.launch = http_launch;
+  server.pool = NULL;
   log_info("Http server initialized on port %s:%ld", inet_ntoa(server.server.address.sin_addr), ntohs(server.server.address.sin_port));
 
   return server;
+}
+
+/**
+ * It's a wrapper around the server destructor that also destroys the routes dictionary
+ *
+ * @param server The server object.
+ */
+void http_server_destructor(struct HTTPServer *server)
+{
+  server_destructor(&server->server);
+  dictionary_destructor(&server->routes);
 }
 
 /**
@@ -107,6 +119,7 @@ void http_launch(struct HTTPServer *server)
   log_info("Http server launched... Waiting for clients...");
   // Initialize a thread pool to handle clients.
   struct ThreadPool *thread_pool = thread_pool_constructor(20);
+  server->pool = thread_pool;
   // Cast some of the member variables from the server.
   struct sockaddr *sock_addr = (struct sockaddr *)&server->server.address;
   socklen_t address_length = (socklen_t)sizeof(server->server.address);

@@ -5,6 +5,7 @@
 
 #include "networking/server.h"
 #include "http_request.h"
+#include "systems/thread_pool.h"
 
 /**
  * The HTTPServer struct is the basis for servers intended to read and recieve HTTP protocols.
@@ -16,6 +17,7 @@ struct HTTPServer
 
   struct Server server;     // A generic server object to connect to the network with the appropriate protocols.
   struct Dictionary routes; // A dictionary of routes registered on the server with URL's as keys.
+  struct ThreadPool *pool;  // A thread pool to handle incoming requests.
 
   /* Public member methods */
 
@@ -44,6 +46,8 @@ enum HTTPMethods
 /* Constructor and destructor */
 
 struct HTTPServer http_server_constructor(u_long interface, int port);
+
+void http_server_destructor(struct HTTPServer *server);
 
 /* Public helper functions */
 

@@ -22,6 +22,8 @@ struct ThreadPool
 
   // A function for safely adding work to the queue.
   void (*add_work)(struct ThreadPool *thread_pool, struct ThreadJob thread_job);
+  // A function for waiting for all threads to finish.
+  void (*wait_all)(struct ThreadPool *thread_pool);
 };
 
 // A function for creating a thread pool.

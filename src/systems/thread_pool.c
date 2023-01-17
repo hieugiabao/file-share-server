@@ -6,6 +6,7 @@
 /* PRIVATE MEMBER PROTOTYES */
 void *generic_thread_function(void *arg);
 void add_work(struct ThreadPool *thread_pool, struct ThreadJob job);
+void wait(struct ThreadPool *thread_pool);
 
 /* Construstors */
 
@@ -35,6 +36,7 @@ struct ThreadPool *thread_pool_constructor(int num_threads)
   }
   pthread_mutex_unlock(&thread_pool->lock);
   thread_pool->add_work = add_work;
+  thread_pool->wait_all = wait;
   return thread_pool;
 }
 
@@ -97,6 +99,7 @@ void *generic_thread_function(void *arg)
   {
     // Lock the work queue.
     pthread_mutex_lock(&thread_pool->lock);
+    // Wait for work to be added to the queue.
     pthread_cond_wait(&thread_pool->signal, &thread_pool->lock);
     // Get the job from the queue.
     struct ThreadJob *thread_job = (struct ThreadJob *)thread_pool->work.peek(&thread_pool->work);
@@ -128,4 +131,17 @@ void add_work(struct ThreadPool *thread_pool, struct ThreadJob thread_job)
   thread_pool->work.push(&thread_pool->work, &thread_job, sizeof(thread_job));
   pthread_cond_signal(&thread_pool->signal);
   pthread_mutex_unlock(&thread_pool->lock);
+}
+
+/**
+ * Waits for all the threads in the pool to finish their current jobs.
+ *
+ * @param thread_pool The thread pool to wait for.
+ */
+void wait(struct ThreadPool *thread_pool)
+{
+  while (thread_pool->active == 1 && thread_pool->work.list.length > 0)
+  {
+    pthread_cond_wait(&thread_pool->signal, &thread_pool->lock);
+  }
 }
