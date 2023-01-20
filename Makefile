@@ -78,6 +78,7 @@ SRCS	=	\
 			data_structures/dictionary/dictionary.c    \
 			systems/files.c												\
 			systems/thread_pool.c									\
+			database/db.c													\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #
@@ -117,9 +118,12 @@ RM			=	rm -f
 LIBS		=	\
 
 LDLIBS		=	\
+					  -lm               \
+						-lpthread				  \
+						-l:sqlite3.a      \
 
 LDFLAGS		=	\
-				-lm										\
+				-L $(DIRLIB)					\
 
 CPPFLAGS	=	\
 				-I $(DIRINC)					\

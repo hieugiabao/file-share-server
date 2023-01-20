@@ -6,6 +6,7 @@
 #include "linked_list.h"
 #include "entry.h"
 #include "binary_search_tree.h"
+#include <stddef.h>
 
 // The dictionary is a collection of entries stored in a BinarySearchTree.
 struct Dictionary
@@ -21,6 +22,8 @@ struct Dictionary
   void *(*search)(struct Dictionary *dictionary, void *key, unsigned long key_size);
   // The insert function adds a new entry to the dictionary.  Since memory allocation is handled by the entry constructor, the size of this entry's key and value must be specified.
   void (*insert)(struct Dictionary *dictionary, void *key, unsigned long key_size, void *value, unsigned long value_size);
+  // The iterate function iterates over the dictionary's entries, calling the callback function for each entry.
+  void (*iterate)(struct Dictionary *dictionary, size_t (*key_size)(void *key), void (*callback)(void *key, void *value, void *arg), void *arg);
 };
 
 // Creating a new dictionary.

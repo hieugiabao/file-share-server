@@ -11,6 +11,7 @@ void recursive_dictionary_destroy(struct Node *cursor);
 
 void insert_dict(struct Dictionary *dictionary, void *key, unsigned long key_size, void *value, unsigned long value_size);
 void *search_dict(struct Dictionary *dictionary, void *key, unsigned long key_size);
+void iterate_dict(struct Dictionary *dictionary, size_t (*key_size)(void *key), void (*callback)(void *key, void *value, void *arg), void *arg);
 
 /* Constructor */
 
@@ -30,6 +31,7 @@ struct Dictionary dictionary_constructor(int (*compare)(void *key_one, void *key
   dictionary.keys = linked_list_constructor();
   dictionary.insert = insert_dict;
   dictionary.search = search_dict;
+  dictionary.iterate = iterate_dict;
   return dictionary;
 }
 
@@ -141,5 +143,22 @@ int compare_string_keys(void *entry_one, void *entry_two)
   else
   {
     return 0;
+  }
+}
+
+/**
+ * It iterates through the dictionary and calls a callback function on each entry
+ *
+ * @param dictionary The dictionary to iterate over.
+ * @param callback a function pointer to a function that takes a pointer to an Entry and a void pointer as parameters.
+ * @param arg The argument to pass to the callback function.
+ */
+void iterate_dict(struct Dictionary *dictionary, size_t (*key_size)(void *key), void (*callback)(void *key, void *value, void *arg), void *arg)
+{
+  for (int i = 0; i < dictionary->keys.length; i++)
+  {
+    void *key = dictionary->keys.retrieve(&dictionary->keys, i);
+    void *value = dictionary->search(dictionary, key, key_size(key));
+    callback(key, value, arg);
   }
 }

@@ -1,15 +1,29 @@
 #include "logger/logger.h"
 #include "networking.h"
 #include "systems/thread_pool.h"
+#include "database/db.h"
+
 #include <signal.h>
 #include <setjmp.h>
 
 #define UPLOAD_DIR "./upload"
+#define DATABASE_URI "test.db"
 
 static jmp_buf env;
 
 void *tftp_init_handler(void *arg);
 void *http_init_handler(void *arg);
+
+void sqliteversion_callback(sqlite3_stmt *res, void *arg)
+{
+  (void)arg;
+
+  int i;
+  for (i = 0; i < sqlite3_column_count(res); i++)
+  {
+    log_info("%s - %s", sqlite3_column_name(res, i), sqlite3_column_text(res, i));
+  }
+}
 
 void sigintHandler()
 {
@@ -30,12 +44,21 @@ int main()
   struct TFTPServer tftp_server;
 
   struct ThreadPool *pool = thread_pool_constructor(2);
+  struct DatabaseManager *manager = get_manager();
 
   if (!setjmp(env))
   {
     int ret;
     if ((ret = logger_init(D_INFO, NULL)) < 0)
       return (ret);
+    if (connect_db(DATABASE_URI, NULL) == -1)
+    {
+      log_error("Can't connect to database");
+    }
+
+    struct DatabasePool *db_pool = manager->get_pool(manager, NULL);
+
+    db_pool->exec(db_pool, sqliteversion_callback, NULL, "SELECT SQLITE_VERSION() as sqlite_version", 0);
 
     struct ThreadJob create_http_server_job = thread_job_constructor(http_init_handler, &http_server);
     pool->add_work(pool, create_http_server_job);
@@ -47,6 +70,7 @@ int main()
   }
   else
   {
+    database_manager_destructor(manager);
     tftp_server_destructor(&tftp_server);
     http_server_destructor(&http_server);
     thread_pool_destructor(pool);
