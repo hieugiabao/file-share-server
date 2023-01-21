@@ -6,6 +6,7 @@
 .vscode/settings.json
 *.log
 *.d
+*.a
 *.o
 
 # editors
@@ -20,3 +21,4 @@
 
 upload/
 test.db
+!libs/*.a

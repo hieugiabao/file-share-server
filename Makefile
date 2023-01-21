@@ -78,7 +78,9 @@ SRCS	=	\
 			data_structures/dictionary/dictionary.c    \
 			systems/files.c												\
 			systems/thread_pool.c									\
+			utils/helper.c 												\
 			database/db.c													\
+			model/user.c  												\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #

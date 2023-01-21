@@ -2,17 +2,20 @@
 #include "networking.h"
 #include "systems/thread_pool.h"
 #include "database/db.h"
+#include "model/user.h"
 
 #include <signal.h>
 #include <setjmp.h>
 
 #define UPLOAD_DIR "./upload"
 #define DATABASE_URI "test.db"
+#define DATABASE_INIT_FILE "create_table.sql"
 
 static jmp_buf env;
 
 void *tftp_init_handler(void *arg);
 void *http_init_handler(void *arg);
+void init_database(struct DatabasePool *pool);
 
 void sqliteversion_callback(sqlite3_stmt *res, void *arg)
 {
@@ -44,12 +47,12 @@ int main()
   struct TFTPServer tftp_server;
 
   struct ThreadPool *pool = thread_pool_constructor(2);
-  struct DatabaseManager *manager = get_manager();
+  struct DatabaseManager *manager = get_db_manager();
 
   if (!setjmp(env))
   {
     int ret;
-    if ((ret = logger_init(D_INFO, NULL)) < 0)
+    if ((ret = logger_init(D_DEBUG, NULL)) < 0)
       return (ret);
     if (connect_db(DATABASE_URI, NULL) == -1)
     {
@@ -59,6 +62,7 @@ int main()
     struct DatabasePool *db_pool = manager->get_pool(manager, NULL);
 
     db_pool->exec(db_pool, sqliteversion_callback, NULL, "SELECT SQLITE_VERSION() as sqlite_version", 0);
+    init_database(db_pool);
 
     struct ThreadJob create_http_server_job = thread_job_constructor(http_init_handler, &http_server);
     pool->add_work(pool, create_http_server_job);
@@ -98,4 +102,30 @@ void *http_init_handler(void *arg)
   http_server->launch(http_server);
 
   return NULL;
+}
+
+void init_database(struct DatabasePool *pool)
+{
+  int fd = open(DATABASE_INIT_FILE, O_RDONLY);
+  if (fd == -1)
+  {
+    log_error("Can't open file %s", DATABASE_INIT_FILE);
+    return;
+  }
+  // get num of characters
+  int num = lseek(fd, 0, SEEK_END);
+  // reset file pointer
+  lseek(fd, 0, SEEK_SET);
+
+  // read file
+  char *buffer = malloc(num);
+  int ret = read(fd, buffer, num);
+
+  if (ret == -1)
+  {
+    log_error("Can't read file %s", DATABASE_INIT_FILE);
+    return;
+  }
+
+  pool->exec(pool, NULL, NULL, buffer, 0);
 }

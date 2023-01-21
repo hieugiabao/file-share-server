@@ -46,7 +46,7 @@ struct DatabaseManager
 
 int connect_db(const char *uri, char *name);
 
-struct DatabaseManager *get_manager();
+struct DatabaseManager *get_db_manager();
 void database_manager_destructor(struct DatabaseManager *manager);
 
 #endif

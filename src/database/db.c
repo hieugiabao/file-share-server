@@ -109,7 +109,7 @@ void database_manager_destructor(struct DatabaseManager *manager)
  *
  * @return A pointer to a struct DatabaseManager.
  */
-struct DatabaseManager *get_manager()
+struct DatabaseManager *get_db_manager()
 {
   if (manager == NULL)
     manager = database_manager_constructor();
@@ -185,9 +185,17 @@ int exec(struct DatabasePool *pool, void (*callback)(sqlite3_stmt *res, void *ar
   }
   va_end(args);
 
-  while (sqlite3_step(pool->res) == SQLITE_ROW && callback != NULL)
+  log_debug("Query: %s", sqlite3_expanded_sql(pool->res));
+
+  while ((ret = sqlite3_step(pool->res)) == SQLITE_ROW && callback != NULL)
   {
     callback(pool->res, arg);
+  }
+
+  if (ret != SQLITE_DONE)
+  {
+    log_error("Query error: %s", sqlite3_errmsg(pool->db));
+    return (-1);
   }
 
   sqlite3_finalize(pool->res);
@@ -239,7 +247,7 @@ int add_pool(struct DatabaseManager *manager, char *name, struct DatabasePool *p
  */
 int connect_db(const char *uri, char *name)
 {
-  struct DatabaseManager *manager = get_manager();
+  struct DatabaseManager *manager = get_db_manager();
   if (name == NULL)
     name = "default";
   struct DatabasePool *pool = database_pool_constructor(uri, name);
