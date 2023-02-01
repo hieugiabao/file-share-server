@@ -21,8 +21,11 @@ void register_routes(struct HTTPServer *server, char *(*callback)(struct HTTPSer
 
 char *_404(size_t *size);
 char *_400(size_t *size);
+char *_455(size_t *size);
 const char *get_content_type(const char *uri);
 char *server_resource(char *uri, size_t *size);
+
+int is_match_method(char *method, int methods[9]);
 
 /* Private data types */
 
@@ -161,7 +164,7 @@ void *http_handler(void *arg)
   // Find the corresponding route in the server's dictionary.
   // log
   log_info(
-      "Request from %s:%ld - method: %s - route: %s .",
+      "Request from %s:%ld - method: %s - route: %s",
       inet_ntoa(client_server->server->server.address.sin_addr),
       ntohs(client_server->server->server.address.sin_port), method, uri);
 
@@ -172,8 +175,15 @@ void *http_handler(void *arg)
 
   if (route)
   {
-    response = route->route_callback(client_server->server, &request);
-    response_size = sizeof(char[strlen(response)]);
+    if (is_match_method(method, route->methods))
+    {
+      response = route->route_callback(client_server->server, &request);
+      response_size = sizeof(char[strlen(response)]);
+    }
+    else
+    {
+      response = _455(&response_size);
+    }
   }
   else
   {
@@ -258,6 +268,18 @@ char *_400(size_t *size)
   char *template_response = render_template(1, "public/400.html");
   char *response = malloc(strlen(template_response) + strlen(c400) + 10);
   sprintf(response, "%s%ld\r\n\r\n%s", c400, strlen(template_response), template_response);
+  *size = strlen(response);
+  return response;
+}
+
+char *_455(size_t *size)
+{
+  const char *c455 = "HTTP/1.1 455 Method Not Allowed\r\n"
+                     "Connection: close\r\n"
+                     "Content-Length: 0\r\n\r\n";
+
+  char *response = malloc(strlen(c455) + 10);
+  sprintf(response, "%s", c455);
   *size = strlen(response);
   return response;
 }
@@ -362,4 +384,43 @@ char *server_resource(char *uri, size_t *size)
   }
   fclose(fp);
   return buffer;
+}
+
+/**
+ * It takes a string and an array of integers, and returns 1 if the string matches one of the integers in the array
+ *
+ * @param method The HTTP method to match.
+ * @param methods an array of ints that represent the HTTP methods that are allowed for this route.
+ *
+ * @return The return value is the code of the method.
+ */
+int is_match_method(char *method, int methods[9])
+{
+  int code;
+  if (strcmp(method, "GET") == 0)
+    code = GET;
+  if (strcmp(method, "POST") == 0)
+    code = POST;
+  if (strcmp(method, "PUT") == 0)
+    code = PUT;
+  if (strcmp(method, "DELETE") == 0)
+    code = DELETE;
+  if (strcmp(method, "HEAD") == 0)
+    code = HEAD;
+  if (strcmp(method, "OPTIONS") == 0)
+    code = OPTIONS;
+  if (strcmp(method, "CONNECT") == 0)
+    code = CONNECT;
+  if (strcmp(method, "TRACE") == 0)
+    code = TRACE;
+  if (strcmp(method, "PATCH") == 0)
+    code = PATCH;
+
+  for (int i = 0; i < 9; i++)
+  {
+    if (methods[i] == code)
+      return 1;
+  }
+
+  return 0;
 }

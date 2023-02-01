@@ -4,10 +4,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /* Private member methods prototypes */
 
 void extract_request_line_fields(struct HTTPRequest *request, char *request_line);
+void extract_request_query(struct HTTPRequest *request, char *query_string);
 void extract_header_fields(struct HTTPRequest *request, char *header_fields);
 void extract_body(struct HTTPRequest *request, char *body);
 
@@ -71,11 +73,15 @@ void extract_request_line_fields(struct HTTPRequest *request, char *request_line
   char fields[strlen(request_line)];
   strcpy(fields, request_line);
   char *method = strtok(fields, " ");
-  char *uri = strtok(NULL, " ");
+  char *path = strtok(NULL, " ");
   char *http_version = strtok(NULL, "\0");
   // Insert the results into the request object as a dictionary.
   struct Dictionary request_line_dict = dictionary_constructor(compare_string_keys);
   request_line_dict.insert(&request_line_dict, "method", sizeof("method"), method, sizeof(char[strlen(method)]));
+  char *uri = strtok(path, "?");
+  char *query_string = strtok(NULL, "\0");
+  extract_request_query(request, query_string);
+
   request_line_dict.insert(&request_line_dict, "uri", sizeof("uri"), uri, sizeof(char[strlen(uri)]));
   request_line_dict.insert(&request_line_dict, "http_version", sizeof("http_version"), http_version, sizeof(char[strlen(http_version)]));
 
@@ -171,4 +177,34 @@ void extract_body(struct HTTPRequest *request, char *body)
 
     request->body = body_dict;
   }
+}
+
+void extract_request_query(struct HTTPRequest *request, char *query_string)
+{
+  struct Dictionary query_dict = dictionary_constructor(compare_string_keys);
+  struct Queue fields = queue_constructor();
+  char *field = strtok(query_string, "&");
+  while (field)
+  {
+    fields.push(&fields, field, sizeof(char[strlen(field)]));
+    field = strtok(NULL, "&");
+  }
+
+  field = fields.peek(&fields);
+  while (field)
+  {
+    char *key = strtok(field, "=");
+    char *value = strtok(NULL, "\0");
+    // Remove unnecessary leading white space.
+    if (value[0] == ' ')
+    {
+      value++;
+    }
+    query_dict.insert(&query_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
+    fields.pop(&fields);
+    field = fields.peek(&fields);
+  }
+  queue_destructor(&fields);
+
+  request->query = query_dict;
 }

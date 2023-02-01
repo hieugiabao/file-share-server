@@ -97,7 +97,6 @@ int update_user(struct User *user)
                        convert_long_to_string(user->status), convert_long_to_string(user->id));
   if (res != SQLITE_OK)
     return -1;
-  log_debug("Updated user %ld", user->id);
   return 0;
 }
 

@@ -3,6 +3,7 @@
 #include "systems/thread_pool.h"
 #include "database/db.h"
 #include "model/user.h"
+#include "http/controller/controller.h"
 
 #include <signal.h>
 #include <setjmp.h>
@@ -99,6 +100,10 @@ void *http_init_handler(void *arg)
 {
   struct HTTPServer *http_server = (struct HTTPServer *)arg;
   *http_server = http_server_constructor(INADDR_ANY, 8000);
+  http_server->register_routes(http_server, login, "/login", 1, POST);
+  http_server->register_routes(http_server, register_user, "/register", 1, POST);
+  http_server->register_routes(http_server, get_user_info, "/get_me", 1, GET);
+  http_server->register_routes(http_server, logout, "/logout", 1, POST);
   http_server->launch(http_server);
 
   return NULL;
@@ -127,5 +132,15 @@ void init_database(struct DatabasePool *pool)
     return;
   }
 
-  pool->exec(pool, NULL, NULL, buffer, 0);
+  // slipt string by ;
+  char *token = strtok(buffer, ";");
+  while (token != NULL)
+  {
+    // add ; to end of string
+    token[strlen(token)] = ';';
+    pool->exec(pool, NULL, NULL, token, 0);
+    token = strtok(NULL, ";");
+  }
+  free(buffer);
+  close(fd);
 }

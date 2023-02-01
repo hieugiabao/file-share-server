@@ -32,7 +32,7 @@ struct HTTPServer
  */
 enum HTTPMethods
 {
-  GET,
+  GET = 1,
   POST,
   PUT,
   DELETE,
