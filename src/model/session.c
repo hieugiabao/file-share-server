@@ -13,6 +13,7 @@ struct User *get_user(struct Session *session);
 int is_expired(struct Session *session);
 
 void _find_session_callback(sqlite3_stmt *res, void *arg);
+void _find_token_callback(sqlite3_stmt *res, void *arg);
 void _get_user_callback(sqlite3_stmt *res, void *arg);
 time_t time_from_string(char *str, char *format);
 
@@ -30,7 +31,8 @@ struct Session *session_new(long user_id, char *token)
 {
   struct Session *session = (struct Session *)malloc(sizeof(struct Session));
   session->user_id = user_id;
-  session->token = strdup(token);
+  if (token != NULL)
+    session->token = strdup(token);
   session->save = save_session;
   session->_user = NULL;
   session->delete_session = delete_session;
@@ -69,14 +71,26 @@ int save_session(struct Session *session)
     return -1;
   }
 
-  char *sql = "INSERT INTO sessions (user_id, token) VALUES (?, ?)";
-  int res = pool->exec(pool, NULL, NULL, sql, 2, convert_long_to_string(session->user_id), session->token);
+  char *sql = "INSERT INTO sessions (user_id) VALUES (?)";
+  int res = pool->exec(pool, NULL, NULL, sql, 1, convert_long_to_string(session->user_id));
   if (res != SQLITE_OK)
   {
     return -1;
   }
   int last_id = sqlite3_last_insert_rowid(pool->db);
   session->id = last_id;
+
+  // retrive token from table
+  sql = "SELECT token FROM sessions WHERE id = ?";
+  char *token = NULL;
+  res = pool->exec(pool, _find_token_callback, &token, sql, 1, convert_long_to_string(session->id));
+
+  if (res != SQLITE_OK)
+  {
+    return -1;
+  }
+  session->token = token;
+
   return 0;
 }
 
@@ -227,6 +241,13 @@ void _get_user_callback(sqlite3_stmt *res, void *arg)
   *(struct User **)arg = user;
 }
 
+/**
+ * It takes a SQLite result set and a pointer to a Session pointer, and it sets the Session pointer to a new Session object
+ * with the data from the result set
+ *
+ * @param res The result of the query.
+ * @param arg a pointer to a pointer to a Session struct.
+ */
 void _find_session_callback(sqlite3_stmt *res, void *arg)
 {
   struct Session *session = session_new(
@@ -235,6 +256,11 @@ void _find_session_callback(sqlite3_stmt *res, void *arg)
   session->id = sqlite3_column_int(res, 0);
   session->created_at = strdup((char *)sqlite3_column_text(res, 3));
   *(struct Session **)arg = session;
+}
+
+void _find_token_callback(sqlite3_stmt *res, void *arg)
+{
+  *(char **)arg = strdup((char *)sqlite3_column_text(res, 0));
 }
 
 /**

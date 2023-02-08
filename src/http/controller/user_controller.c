@@ -39,17 +39,16 @@ char *login(struct HTTPServer *server, struct HTTPRequest *request)
     return format_401();
   }
 
-#define TOKEN_LENGTH 32
-  char *token = malloc(TOKEN_LENGTH);
-  generate_token(token, TOKEN_LENGTH);
-  struct Session *session = session_new(user->id, token);
+#define TOKEN_LENGTH 64
+  struct Session *session = session_new(user->id, NULL);
   session->save(session);
 
   char *response = malloc(100);
   size_t length = 0;
-  char *encoded_token = base64_encode((unsigned char *)token, TOKEN_LENGTH, &length);
+  char *encoded_token = base64_encode((unsigned char *)session->token, TOKEN_LENGTH, &length);
   sprintf(response, "{\"token\": \"%.*s\"}", (int)length, encoded_token);
 
+  session_free(session);
   return format_200_with_content_type(response, "application/json");
 }
 
