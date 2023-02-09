@@ -31,7 +31,7 @@ char *login(struct HTTPServer *server, struct HTTPRequest *request)
   struct User *user = user_find_by_username(username);
   if (user == NULL)
   {
-    return format_404();
+    return format_401();
   }
 
   if (strcmp(user->password, password) != 0)
@@ -49,6 +49,7 @@ char *login(struct HTTPServer *server, struct HTTPRequest *request)
   sprintf(response, "{\"token\": \"%.*s\"}", (int)length, encoded_token);
 
   session_free(session);
+  user_free(user);
   return format_200_with_content_type(response, "application/json");
 }
 
@@ -76,7 +77,7 @@ char *register_user(struct HTTPServer *server, struct HTTPRequest *request)
   struct User *user = user_find_by_username(username);
   if (user != NULL)
   {
-    return format_422();
+    return format_409();
   }
 
   user = user_new(display_name, username, password);
@@ -89,7 +90,7 @@ char *register_user(struct HTTPServer *server, struct HTTPRequest *request)
   {
     return format_500();
   }
-
+  user_free(user);
   return format_200();
 }
 
@@ -112,7 +113,7 @@ char *get_user_info(struct HTTPServer *server, struct HTTPRequest *request)
   }
 
   char *response = user->to_json(user);
-
+  user_free(user);
   return format_200_with_content_type(response, "application/json");
 }
 
@@ -139,5 +140,7 @@ char *logout(struct HTTPServer *server, struct HTTPRequest *request)
     return format_500();
   }
 
+  session_free(session);
+  user_free(user);
   return format_200();
 }

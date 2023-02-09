@@ -19,9 +19,9 @@
 struct Entry entry_constructor(void *key, unsigned long key_size, void *value, unsigned long value_size)
 {
   struct Entry entry;
-  entry.key = malloc(key_size);
+  entry.key = calloc(key_size, key_size);
   memcpy(entry.key, key, key_size);
-  entry.value = calloc(value_size, sizeof(void *));
+  entry.value = calloc(value_size, value_size);
   memcpy(entry.value, value, value_size);
   return entry;
 }

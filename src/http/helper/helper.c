@@ -28,6 +28,13 @@ char *format_404()
          "Content-Length: 0\r\n\r\n";
 }
 
+char *format_403()
+{
+  return "HTTP/1.1 403 Forbidden\r\n"
+         "Connection: close\r\n"
+         "Content-Length: 0\r\n\r\n";
+}
+
 char *format_401()
 {
   return "HTTP/1.1 401 Unauthorized\r\n"
@@ -66,6 +73,13 @@ char *format_505()
 char *format_422()
 {
   return "HTTP/1.1 422 Unprocessable Entity\r\n"
+         "Connection: close\r\n"
+         "Content-Length: 0\r\n\r\n";
+}
+
+char *format_409()
+{
+  return "HTTP/1.1 409 Conflict\r\n"
          "Connection: close\r\n"
          "Content-Length: 0\r\n\r\n";
 }
@@ -131,11 +145,14 @@ struct User *get_user_from_request(struct HTTPRequest *request, char *token)
   }
 
   size_t length = 0;
-  unsigned char *decoded_token = base64_decode(token_value, strlen(token_value) - 1, &length);
-  if (decoded_token == NULL)
+  unsigned char *_decoded_token = base64_decode(token_value, strlen(token_value) - 1, &length);
+  if (_decoded_token == NULL)
   {
     return NULL;
   }
+  char decoded_token[length + 1];
+  memcpy(decoded_token, _decoded_token, length);
+  decoded_token[length] = '\0';
   if (token != NULL)
   {
     strcpy(token, (char *)decoded_token);

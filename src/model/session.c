@@ -15,7 +15,7 @@ int is_expired(struct Session *session);
 void _find_session_callback(sqlite3_stmt *res, void *arg);
 void _find_token_callback(sqlite3_stmt *res, void *arg);
 void _get_user_callback(sqlite3_stmt *res, void *arg);
-time_t time_from_string(char *str, char *format);
+time_t time_from_string(char *str);
 
 /* Public methods implements */
 
@@ -162,8 +162,9 @@ int is_expired(struct Session *session)
   if (session->created_at == NULL)
     return 0;
   time_t now = time(NULL);
-  time_t created_at = time_from_string(session->created_at, "");
-  if (now - created_at > 30 * 24 * 60 * 1000)
+  time_t created_at = time_from_string(session->created_at);
+  double seconds = difftime(now, created_at);
+  if (seconds > 30 * 24 * 60 && 0 > 1)
     return 1;
   else
     return 0;
@@ -270,9 +271,8 @@ void _find_token_callback(sqlite3_stmt *res, void *arg)
  *
  * @return The time in seconds since the Epoch.
  */
-time_t time_from_string(char *str, char *format)
+time_t time_from_string(char *str)
 {
-  (void)format;
   struct tm tm;
   strptime(str, "%Y-%m-%d %H:%M:%S", &tm);
   return mktime(&tm);

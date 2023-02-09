@@ -7,6 +7,10 @@
 
 char *format_404();
 
+char *format_403();
+
+char *format_409();
+
 char *format_401();
 
 char *format_400();

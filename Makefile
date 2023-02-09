@@ -81,9 +81,11 @@ SRCS	=	\
 			utils/helper.c 												\
 			database/db.c													\
 			http/controller/user_controller.c		  \
+			http/controller/group_controller.c		\
 			http/helper/helper.c									\
 			model/user.c  												\
 			model/session.c												\
+			model/group.c													\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #
