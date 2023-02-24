@@ -1,6 +1,6 @@
 
-#ifndef _MODEL_SESSION_H
-#define _MODEL_SESSION_H
+#ifndef _MODEL_SESSION_H_
+#define _MODEL_SESSION_H_
 
 #include "user.h"
 

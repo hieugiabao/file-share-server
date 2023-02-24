@@ -8,19 +8,19 @@
 
 /* Public member function prototypes */
 
-int save_group(struct Group *group);
-int update_group(struct Group *group);
-int remove_group(struct Group *group);
-int add_member_to_group(struct Group *group, struct User *user);
-int remove_member_from_group(struct Group *group, struct User *user);
-struct User *get_group_owner(struct Group *group);
-struct LinkedList *get_group_members(struct Group *group);
-char *to_json(struct Group *group);
+int group_save(struct Group *group);
+int group_update(struct Group *group);
+int group_remove(struct Group *group);
+int group_add_member(struct Group *group, struct User *user);
+int group_leave(struct Group *group, struct User *user);
+struct User *group_get_owner(struct Group *group);
+struct LinkedList *group_get_members(struct Group *group);
 
 /* Private helper function prototypes */
 void _retreive_code_callback(sqlite3_stmt *res, void *arg);
 void _get_group_members_callback(sqlite3_stmt *res, void *arg);
 void _get_group_callback(sqlite3_stmt *res, void *arg);
+void _get_groups_callback(sqlite3_stmt *res, void *arg);
 
 /* Public member functions */
 
@@ -34,7 +34,8 @@ void _get_group_callback(sqlite3_stmt *res, void *arg);
  *
  * @return A pointer to a struct Group
  */
-struct Group *group_new(char *name, char *description, char *avatar, long owner_id)
+struct Group *
+group_new(char *name, char *description, char *avatar, long owner_id)
 {
   struct Group *group = malloc(sizeof(struct Group));
   group->name = strdup(name);
@@ -50,14 +51,14 @@ struct Group *group_new(char *name, char *description, char *avatar, long owner_
   group->owner_id = owner_id;
   group->status = 1;
 
-  group->save = save_group;
-  group->update = update_group;
-  group->remove = remove_group;
-  group->add_member = add_member_to_group;
-  group->remove_member = remove_member_from_group;
-  group->get_owner = get_group_owner;
-  group->get_members = get_group_members;
-  group->to_json = to_json;
+  group->save = group_save;
+  group->update = group_update;
+  group->remove = group_remove;
+  group->add_member = group_add_member;
+  group->remove_member = group_leave;
+  group->get_owner = group_get_owner;
+  group->get_members = group_get_members;
+  group->to_json = group_to_json;
 
   group->_owner = NULL;
   group->_members = NULL;
@@ -96,7 +97,7 @@ void group_free(struct Group *group)
  *
  * @return 0 if the group was saved successfully, -1 otherwise.
  */
-int save_group(struct Group *group)
+int group_save(struct Group *group)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -113,14 +114,24 @@ int save_group(struct Group *group)
   group->id = last_id;
 
   // retrive the group code
-  char *code_query = "SELECT code FROM groups WHERE id = ?";
+  query = "SELECT code FROM groups WHERE id = ?";
   char *code = NULL;
-  res = pool->exec(pool, _retreive_code_callback, &code, code_query, 1, convert_long_to_string(group->id));
+  res = pool->exec(pool, _retreive_code_callback, &code, query, 1, convert_long_to_string(group->id));
 
   if (res != SQLITE_OK)
     return -1;
   group->code = strdup(code);
+  free(code);
 
+  query = "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)";
+  res = pool->exec(pool, NULL, NULL, query, 2, convert_long_to_string(group->id), convert_long_to_string(group->owner_id));
+  if (res != SQLITE_OK)
+  {
+    // rollback
+    query = "DELETE FROM groups WHERE id = ?";
+    pool->exec(pool, NULL, NULL, query, 1, convert_long_to_string(group->id));
+    return -1;
+  }
   return 0;
 }
 
@@ -132,7 +143,7 @@ int save_group(struct Group *group)
  * @return The return value is the number of rows that were changed or inserted or deleted by the most recently completed
  * SQL statement on the database connection specified by the first parameter.
  */
-int update_group(struct Group *group)
+int group_update(struct Group *group)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -155,7 +166,7 @@ int update_group(struct Group *group)
  *
  * @return The return value is the number of rows that were changed.
  */
-int remove_group(struct Group *group)
+int group_remove(struct Group *group)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -180,7 +191,7 @@ int remove_group(struct Group *group)
  *
  * @return The return value is the number of rows that were changed by the SQL statement.
  */
-int add_member_to_group(struct Group *group, struct User *user)
+int group_add_member(struct Group *group, struct User *user)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -205,7 +216,7 @@ int add_member_to_group(struct Group *group, struct User *user)
  *
  * @return The return value is the number of rows that were changed by the SQL statement.
  */
-int remove_member_from_group(struct Group *group, struct User *user)
+int group_leave(struct Group *group, struct User *user)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -231,7 +242,7 @@ int remove_member_from_group(struct Group *group, struct User *user)
  *
  * @return A pointer to a User struct.
  */
-struct User *get_group_owner(struct Group *group)
+struct User *group_get_owner(struct Group *group)
 {
   if (group->_owner != NULL)
     return group->_owner;
@@ -248,7 +259,7 @@ struct User *get_group_owner(struct Group *group)
  *
  * @return A linked list of user ids.
  */
-struct LinkedList *get_group_members(struct Group *group)
+struct LinkedList *group_get_members(struct Group *group)
 {
   if (group->_members != NULL)
     return group->_members;
@@ -261,14 +272,14 @@ struct LinkedList *get_group_members(struct Group *group)
   char *query = "SELECT user_id FROM group_members WHERE group_id = ?";
 
   struct LinkedList members = linked_list_constructor();
-
-  int res = pool->exec(pool, _get_group_members_callback, &members, query, 1, convert_long_to_string(group->id));
+  struct LinkedList *members_ptr = malloc(sizeof(struct LinkedList));
+  *members_ptr = members;
+  int res = pool->exec(pool, _get_group_members_callback, members_ptr, query, 1, convert_long_to_string(group->id));
 
   if (res != SQLITE_OK)
     return NULL;
 
-  group->_members = &members;
-
+  group->_members = members_ptr;
   return group->_members;
 }
 
@@ -279,9 +290,9 @@ struct LinkedList *get_group_members(struct Group *group)
  *
  * @return A JSON string representing the group.
  */
-char *to_json(struct Group *group)
+char *group_to_json(struct Group *group)
 {
-  struct User *owner = get_group_owner(group);
+  struct User *owner = group_get_owner(group);
   char *owner_json = owner->to_json(owner);
   char *json = malloc(sizeof(char) * 1024);
   sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"description\":\"%s\",\"avatar\":\"%s\",\"status\":%d,\"code\": \"%s\",\"owner\":%s}",
@@ -321,8 +332,7 @@ void _get_group_members_callback(sqlite3_stmt *res, void *arg)
   long user_id = sqlite3_column_int64(res, 0);
 
   struct User *user = user_find_by_id(user_id);
-
-  members->insert(members, 0, user, sizeof(struct User *));
+  members->insert(members, 0, user, sizeof(struct User));
 }
 
 void _get_group_callback(sqlite3_stmt *res, void *arg)
@@ -340,6 +350,14 @@ void _get_group_callback(sqlite3_stmt *res, void *arg)
   *(struct Group **)arg = group;
 }
 
+void _get_groups_callback(sqlite3_stmt *res, void *arg)
+{
+  struct LinkedList *groups = (struct LinkedList *)arg;
+  struct Group *group = NULL;
+  _get_group_callback(res, &group);
+  groups->insert(groups, 0, group, sizeof(struct Group));
+}
+
 /* Public function implements */
 
 /**
@@ -349,7 +367,7 @@ void _get_group_callback(sqlite3_stmt *res, void *arg)
  *
  * @return A group struct
  */
-struct Group *get_group_by_id(long id)
+struct Group *group_find_by_id(long id)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -375,7 +393,7 @@ struct Group *get_group_by_id(long id)
  *
  * @return A group struct
  */
-struct Group *get_group_by_name(char *name)
+struct Group *group_find_by_name(char *name)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -401,7 +419,7 @@ struct Group *get_group_by_name(char *name)
  *
  * @return A group struct
  */
-struct Group *get_group_by_code(char *code)
+struct Group *group_find_by_code(char *code)
 {
   struct DatabaseManager *manager = get_db_manager();
   struct DatabasePool *pool = manager->get_pool(manager, NULL);
@@ -418,4 +436,24 @@ struct Group *get_group_by_code(char *code)
     return NULL;
 
   return group;
+}
+
+struct LinkedList *group_find_by_member(long member_id)
+{
+  struct DatabaseManager *manager = get_db_manager();
+  struct DatabasePool *pool = manager->get_pool(manager, NULL);
+  if (pool == NULL)
+    return NULL;
+
+  char *query = "SELECT groups.id, name, description, avatar, status, owner_id, code FROM groups INNER JOIN group_members ON groups.id = group_members.group_id WHERE user_id = ?";
+
+  struct LinkedList groups = linked_list_constructor();
+  struct LinkedList *groups_ptr = malloc(sizeof(struct LinkedList));
+  *groups_ptr = groups;
+  int res = pool->exec(pool, _get_groups_callback, groups_ptr, query, 1, convert_long_to_string(member_id));
+
+  if (res != SQLITE_OK)
+    return NULL;
+
+  return groups_ptr;
 }

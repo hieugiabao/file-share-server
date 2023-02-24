@@ -44,7 +44,6 @@ struct DatabasePool *database_pool_constructor(const char *uri, char *name)
   pool->close = close_connect;
   pool->exec = exec;
   pool->db = NULL;
-  pool->res = NULL;
 
   return (pool);
 }
@@ -172,7 +171,8 @@ int exec(struct DatabasePool *pool, void (*callback)(sqlite3_stmt *res, void *ar
 {
   va_list args;
   va_start(args, num);
-  int ret = sqlite3_prepare_v2(pool->db, sql, -1, &pool->res, NULL);
+  sqlite3_stmt *res;
+  int ret = sqlite3_prepare_v2(pool->db, sql, -1, &res, NULL);
   if (ret != SQLITE_OK)
   {
     log_error("Can't prepare statement: %s", sqlite3_errmsg(pool->db));
@@ -181,25 +181,26 @@ int exec(struct DatabasePool *pool, void (*callback)(sqlite3_stmt *res, void *ar
   for (int i = 0; i < num; i++)
   {
     char *value = va_arg(args, char *);
-    sqlite3_bind_text(pool->res, i + 1, value, -1, SQLITE_STATIC);
+    sqlite3_bind_text(res, i + 1, value, -1, SQLITE_STATIC);
   }
   va_end(args);
 
-  log_debug("Query: %s", sqlite3_expanded_sql(pool->res));
+  log_debug("Query: %s", sqlite3_expanded_sql(res));
 
-  while ((ret = sqlite3_step(pool->res)) == SQLITE_ROW && callback != NULL)
+  while ((ret = sqlite3_step(res)) == SQLITE_ROW && callback != NULL)
   {
-    callback(pool->res, arg);
+    callback(res, arg);
   }
 
   if (ret != SQLITE_DONE)
   {
     log_error("Query error: %s", sqlite3_errmsg(pool->db));
-    return (-1);
+    sqlite3_finalize(res);
+    return ret;
   }
 
-  sqlite3_finalize(pool->res);
-  return (0);
+  sqlite3_finalize(res);
+  return (SQLITE_OK);
 }
 
 /**

@@ -15,7 +15,6 @@ struct DatabasePool
   char *path;        // database path
   char *name;        // database name
   sqlite3 *db;       // database connection
-  sqlite3_stmt *res; // result set
 
   /* Public methods */
 

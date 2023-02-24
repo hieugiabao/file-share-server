@@ -9,7 +9,7 @@
 #include <setjmp.h>
 
 #define UPLOAD_DIR "./upload"
-#define DATABASE_URI "test.db"
+#define DATABASE_URI "test.sqlite"
 #define DATABASE_INIT_FILE "create_table.sql"
 
 static jmp_buf env;
@@ -68,8 +68,8 @@ int main()
     struct ThreadJob create_http_server_job = thread_job_constructor(http_init_handler, &http_server);
     pool->add_work(pool, create_http_server_job);
 
-    struct ThreadJob create_tftp_server_job = thread_job_constructor(tftp_init_handler, &tftp_server);
-    pool->add_work(pool, create_tftp_server_job);
+    // struct ThreadJob create_tftp_server_job = thread_job_constructor(tftp_init_handler, &tftp_server);
+    // pool->add_work(pool, create_tftp_server_job);
 
     pool->wait_all(pool);
   }
@@ -100,12 +100,24 @@ void *http_init_handler(void *arg)
 {
   struct HTTPServer *http_server = (struct HTTPServer *)arg;
   *http_server = http_server_constructor(INADDR_ANY, 8000);
+   
+  /* Register routes */
+
+  // auth
   http_server->register_routes(http_server, login, "/login", 1, POST);
   http_server->register_routes(http_server, register_user, "/register", 1, POST);
   http_server->register_routes(http_server, get_user_info, "/get_me", 1, GET);
+  http_server->register_routes(http_server, get_my_groups, "/me/group", 1, GET);
   http_server->register_routes(http_server, logout, "/logout", 1, POST);
+
+  // group
   http_server->register_routes(http_server, create_group, "/group/create", 1, POST);
-  http_server->register_routes(http_server, update_group_, "/group/update", 1, POST);
+  http_server->register_routes(http_server, update_group, "/group/update", 1, POST);
+  http_server->register_routes(http_server, get_group_members, "/group/members", 1, GET);
+  http_server->register_routes(http_server, delete_group, "/group/delete", 1, DELETE);
+  http_server->register_routes(http_server, join_group, "/group/join", 1, POST);
+  http_server->register_routes(http_server, leave_group, "/group/leave", 1, POST);
+  http_server->register_routes(http_server, kick_member_group, "/group/kick", 1, POST);
   http_server->launch(http_server);
 
   return NULL;

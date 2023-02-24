@@ -1,6 +1,6 @@
 
-#ifndef USER_H
-#define USER_H
+#ifndef _MODEL_USER_H_
+#define _MODEL_USER_H_
 
 /**
  * User status

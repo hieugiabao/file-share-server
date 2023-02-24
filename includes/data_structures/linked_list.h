@@ -25,6 +25,8 @@ struct LinkedList
   void (*sort)(struct LinkedList *list, int (*compare)(void *a, void *b));
   // Binary search. (requires sorted list)
   short (*search)(struct LinkedList *list, void *query, int (*compare)(void *a, void *b));
+  // Convert to json format
+  char *(*to_json)(struct LinkedList *list, char *(*to_json)(void *data));
 };
 
 // Creating a new linked list.

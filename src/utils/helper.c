@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 /**
  * It takes an integer and returns a string
@@ -58,4 +59,18 @@ char *convert_long_to_string(long l)
   char *str = (char *)malloc(10);
   sprintf(str, "%ld", l);
   return str;
+}
+
+/**
+ * It returns the current time in a string format
+ *
+ * @return A pointer to a string.
+ */
+char *get_current_time()
+{
+  time_t t = time(NULL);
+  struct tm *tm = localtime(&t);
+  char *s = (char *)malloc(64);
+  strftime(s, sizeof(s), "%c", tm);
+  return s;
 }

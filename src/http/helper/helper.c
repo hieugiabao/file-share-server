@@ -170,8 +170,11 @@ struct User *get_user_from_request(struct HTTPRequest *request, char *token)
     session_free(session);
     return NULL;
   }
+  struct User *user = malloc(sizeof(struct User));
+  memcpy(user, session->get_user(session), sizeof(struct User));
+  session_free(session);
 
-  return session->get_user(session);
+  return user;
 }
 
 /**

@@ -44,16 +44,13 @@ struct Group
   char *(*to_json)(struct Group *group);
 };
 
-// Create new group
 struct Group *group_new(char *name, char *description, char *avatar, long owner_id);
-// Free group
 void group_free(struct Group *group);
 
-// Get group by id
-struct Group *get_group_by_id(long id);
-// Get group by name
-struct Group *get_group_by_name(char *name);
-// Get group by code
-struct Group *get_group_by_code(char *code);
+struct Group *group_find_by_id(long id);
+struct Group *group_find_by_name(char *name);
+struct Group *group_find_by_code(char *code);
+struct LinkedList *group_find_by_member(long member_id);
+char *group_to_json(struct Group *group);
 
 #endif

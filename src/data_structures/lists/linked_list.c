@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* Private member methods prototypes */
 
@@ -16,6 +17,7 @@ void remove_node_ll(struct LinkedList *list, int index);
 void *retrieve_ll(struct LinkedList *list, int index);
 void bubble_sort_ll(struct LinkedList *list, int (*compare)(void *a, void *b));
 short binary_search_ll(struct LinkedList *list, void *query, int (*compare)(void *a, void *b));
+char *to_json_ll(struct LinkedList *list, char *(*to_json)(void *data));
 
 /* Constructor */
 
@@ -37,6 +39,7 @@ struct LinkedList linked_list_constructor()
   new_list.retrieve = retrieve_ll;
   new_list.sort = bubble_sort_ll;
   new_list.search = binary_search_ll;
+  new_list.to_json = to_json_ll;
 
   return new_list;
 }
@@ -281,4 +284,26 @@ short binary_search_ll(struct LinkedList *list, void *query, int (*compare)(void
     }
   }
   return 0;
+}
+
+char *to_json_ll(struct LinkedList *list, char *(*to_json)(void *data))
+{
+  char *json = malloc(sizeof(char) * 2);
+  json[0] = '[';
+  json[1] = '\0';
+  for (int i = 0; i < list->length; i++)
+  {
+    void *data = list->retrieve(list, i);
+    char *data_json = to_json(data);
+    json = realloc(json, sizeof(char) * (strlen(json) + strlen(data_json) + 2));
+    strcat(json, data_json);
+    if (i != list->length - 1)
+    {
+      strcat(json, ",");
+    }
+    free(data_json);
+  }
+  json = realloc(json, sizeof(char) * (strlen(json) + 2));
+  strcat(json, "]");
+  return json;
 }

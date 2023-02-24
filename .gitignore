@@ -21,4 +21,5 @@
 
 upload/
 test.db
+test.sqlite
 !libs/*.a
