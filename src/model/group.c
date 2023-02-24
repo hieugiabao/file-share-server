@@ -85,7 +85,7 @@ void group_free(struct Group *group)
 
   if (group->_members != NULL)
   {
-    linked_list_destructor(group->_members);
+    linked_list_destructor(group->_members, (void (*)(void *))user_free);
   }
   free(group);
 }

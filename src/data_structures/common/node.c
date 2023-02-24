@@ -31,13 +31,18 @@ struct Node node_constructor(void *data, unsigned long size)
   return node;
 }
 
+
 /**
- * It frees the memory allocated for the data and the node itself
- *
- * @param node The node to destroy.
+ * `node_destructor` frees the data in the node and then frees the node itself
+ * 
+ * @param node The node to be freed.
+ * @param free_data a function pointer to a function that frees the data in the node.
  */
-void node_destructor(struct Node *node)
+void node_destructor(struct Node *node, void (*free_data)(void *data))
 {
-  free(node->data);
+  if (free_data == NULL)
+    free(node->data);
+  else
+    free_data(node->data);
   free(node);
 }

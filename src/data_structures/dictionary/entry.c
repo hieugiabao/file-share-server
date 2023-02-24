@@ -30,10 +30,18 @@ struct Entry entry_constructor(void *key, unsigned long key_size, void *value, u
  * It frees the memory allocated for the key, value, and entry itself
  *
  * @param entry The entry to be destroyed.
+ * @param free_key A function pointer to a function that frees the key in the entry.
+ * @param free_value A function pointer to a function that frees the value in the entry.
  */
-void entry_destructor(struct Entry *entry)
+void entry_destructor(struct Entry *entry, void (*free_key)(void *key), void (*free_value)(void *value))
 {
-  free(entry->key);
-  free(entry->value);
+  if (free_key != NULL)
+    free_key(entry->key);
+  else
+    free(entry->key);
+  if (free_value != NULL)
+    free_value(entry->value);
+  else
+    free(entry->value);
   free(entry);
 }

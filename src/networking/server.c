@@ -76,7 +76,7 @@ struct Server server_constructor(int domain, int service, int protocol, u_long i
 void server_destructor(struct Server *server)
 {
   close(server->socket);
-  dictionary_destructor(&server->routes);
+  dictionary_destructor(&server->routes, NULL, NULL);
 }
 
 /**

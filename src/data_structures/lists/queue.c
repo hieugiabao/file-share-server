@@ -4,7 +4,7 @@
 
 void push(struct Queue *queue, void *data, unsigned long size);
 void *peek(struct Queue *queue);
-void pop(struct Queue *queue);
+void pop(struct Queue *queue, void (*free_data)(void *data));
 
 /* Constructor */
 
@@ -28,13 +28,14 @@ struct Queue queue_constructor()
 }
 
 /**
- * This function frees the memory allocated to the queue.
- *
+ * Destructs the queue by destructing the list.
+ * 
  * @param queue The queue to be destructed.
+ * @param free_data a function pointer to a function that frees the data in the queue.
  */
-void queue_destructor(struct Queue *queue)
+void queue_destructor(struct Queue *queue, void (*free_data)(void *data))
 {
-  linked_list_destructor(&queue->list);
+  linked_list_destructor(&queue->list, free_data);
 }
 
 /* public methods */
@@ -67,12 +68,13 @@ void *peek(struct Queue *queue)
 }
 
 /**
- * Remove the first element from the queue.
- *
+ * Remove the first element from the queue and free the data if the free_data function is not NULL.
+ * 
  * @param queue The queue to pop from.
+ * @param free_data A function pointer to a function that frees the data.
  */
-void pop(struct Queue *queue)
+void pop(struct Queue *queue, void (*free_data)(void *data))
 {
   // Utilize the remove function from LinkedList with enforced parameters.
-  queue->list.remove(&queue->list, 0);
+  queue->list.remove(&queue->list, 0, free_data);
 }

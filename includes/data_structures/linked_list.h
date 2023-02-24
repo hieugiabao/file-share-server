@@ -18,7 +18,7 @@ struct LinkedList
   // Insert adds new items to the chain at a specified location - this function creates the new nodes.
   void (*insert)(struct LinkedList *list, int index, void *data, unsigned long size);
   // Remove an item from the chain at a specified location and deal allocation of memory.
-  void (*remove)(struct LinkedList *list, int index);
+  void (*remove)(struct LinkedList *list, int index, void (*free_data)(void *data));
   // Get the data from a node at a specified location.
   void *(*retrieve)(struct LinkedList *list, int index);
   // Sorting and searching the list (bubble sort).
@@ -32,6 +32,6 @@ struct LinkedList
 // Creating a new linked list.
 struct LinkedList linked_list_constructor(void);
 // Freeing the memory allocated for the linked list.
-void linked_list_destructor(struct LinkedList *list);
+void linked_list_destructor(struct LinkedList *list, void (*free_data)(void *data));
 
 #endif /* LINKED_LIST_H */

@@ -99,7 +99,7 @@ void database_manager_destructor(struct DatabaseManager *manager)
 {
   // close all connection
   manager->pools.iterate(&manager->pools, _get_key_size, _db_manager_des_callback, NULL);
-  dictionary_destructor(&manager->pools);
+  dictionary_destructor(&manager->pools, NULL, NULL);
   free(manager);
 }
 

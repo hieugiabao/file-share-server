@@ -77,7 +77,7 @@ void thread_pool_destructor(struct ThreadPool *thread_pool)
     pthread_join(thread_pool->pool[i], NULL);
   }
   free(thread_pool->pool);
-  queue_destructor(&thread_pool->work);
+  queue_destructor(&thread_pool->work, NULL);
   free(thread_pool);
 }
 
@@ -108,7 +108,7 @@ void *generic_thread_function(void *arg)
     if (thread_job)
     {
       job = *thread_job;
-      thread_pool->work.pop(&thread_pool->work);
+      thread_pool->work.pop(&thread_pool->work, NULL);
     }
     pthread_mutex_unlock(&thread_pool->lock);
     // Execute the job.

@@ -12,9 +12,7 @@ struct Node
   struct Node *prev;
 };
 
-// Creating a new node with the data and size passed in.
 struct Node node_constructor(void *data, unsigned long size);
-// Freeing the memory allocated for the node.
-void node_destructor(struct Node *node);
+void node_destructor(struct Node *node, void (*free_data)(void *data));
 
 #endif /* NODE_H */

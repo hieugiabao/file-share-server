@@ -7,9 +7,9 @@
 /* Private member methods prototypes */
 
 struct Node *create_node_bst(void *data, unsigned long size);
-void destroy_node_bst(struct Node *node);
+void destroy_node_bst(struct Node *node, void (*free_data)(void *data));
 struct Node *iterate_bst(struct BinarySearchTree *tree, struct Node *cursor, void *data, int *direction);
-void recursive_tree_destruction(struct Node *node);
+void recursive_tree_destruction(struct Node *node, void (*free_data)(void *data));
 
 /* Public member methods prototypes */
 
@@ -41,10 +41,11 @@ struct BinarySearchTree binary_search_tree_constructor(int (*compare)(void *data
  * current node
  *
  * @param tree The tree to be destroyed.
+ * @param free_data A function pointer to a function that frees the data in the tree.
  */
-void binary_search_tree_destructor(struct BinarySearchTree *tree)
+void binary_search_tree_destructor(struct BinarySearchTree *tree, void (*free_data)(void *data))
 {
-  recursive_tree_destruction(tree->head);
+  recursive_tree_destruction(tree->head, free_data);
 }
 
 /* Private member methods implementation */
@@ -69,10 +70,11 @@ struct Node *create_node_bst(void *data, unsigned long size)
  * This simply renames the node destructor function.
  *
  * @param node The node to be destroyed.
+ * @param free_data A function pointer to a function that frees the data in the node.
  */
-void destroy_node_bst(struct Node *node)
+void destroy_node_bst(struct Node *node, void (*free_data)(void *data))
 {
-  node_destructor(node);
+  node_destructor(node, free_data);
 }
 
 /**
@@ -142,18 +144,19 @@ struct Node *iterate_bst(struct BinarySearchTree *tree, struct Node *cursor, voi
  * It recursively destroys the tree by destroying the next and previous nodes of the current node
  *
  * @param node The node to be destroyed.
+ * @param free_data A function pointer to a function that frees the data in the node.
  */
-void recursive_tree_destruction(struct Node *node)
+void recursive_tree_destruction(struct Node *node, void (*free_data)(void *data))
 {
   if (node->next)
   {
-    recursive_tree_destruction(node->next);
+    recursive_tree_destruction(node->next, free_data);
   }
   if (node->prev)
   {
-    recursive_tree_destruction(node->prev);
+    recursive_tree_destruction(node->prev, free_data);
   }
-  destroy_node_bst(node);
+  destroy_node_bst(node, free_data);
 }
 
 /* Public member methods implementation */

@@ -5,7 +5,7 @@
 
 /* Private member methods prototypes */
 
-void recursive_dictionary_destroy(struct Node *cursor);
+void recursive_dictionary_destroy(struct Node *cursor, void (*free_key)(void *key), void (*free_value)(void *value));
 
 /* Public member methods prototypes */
 
@@ -39,11 +39,13 @@ struct Dictionary dictionary_constructor(int (*compare)(void *key_one, void *key
  * It destroys the linked list of keys, and then it destroys the binary search tree of values
  *
  * @param dictionary The dictionary to be destroyed.
+ * @param free_key A function that frees the memory allocated for the key.
+ * @param free_value A function that frees the memory allocated for the value.
  */
-void dictionary_destructor(struct Dictionary *dictionary)
+void dictionary_destructor(struct Dictionary *dictionary, void (*free_key)(void *key), void (*free_value)(void *value))
 {
-  linked_list_destructor(&dictionary->keys);
-  recursive_dictionary_destroy(dictionary->bst.head);
+  linked_list_destructor(&dictionary->keys, free_key);
+  recursive_dictionary_destroy(dictionary->bst.head, free_key, free_value);
 }
 
 /* Private member methods implementation */
@@ -53,20 +55,22 @@ void dictionary_destructor(struct Dictionary *dictionary)
  * recursively destroy the next node. Then, free the data of the current node and free the current node
  *
  * @param cursor The current node in the tree.
+ * @param free_key A function that frees the memory allocated for the key.
+ * @param free_value A function that frees the memory allocated for the value.
  */
-void recursive_dictionary_destroy(struct Node *cursor)
+void recursive_dictionary_destroy(struct Node *cursor, void (*free_key)(void *key), void (*free_value)(void *value))
 {
   if (cursor && cursor->prev)
   {
-    recursive_dictionary_destroy(cursor->prev);
+    recursive_dictionary_destroy(cursor->prev, free_key, free_value);
   }
   if (cursor && cursor->next)
   {
-    recursive_dictionary_destroy(cursor->next);
+    recursive_dictionary_destroy(cursor->next, free_key, free_value);
   }
   if (cursor)
   {
-    entry_destructor((struct Entry *)cursor->data);
+    entry_destructor((struct Entry *)cursor->data, free_key, free_value);
     free(cursor);
   }
 }

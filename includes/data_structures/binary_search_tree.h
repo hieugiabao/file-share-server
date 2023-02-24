@@ -24,7 +24,7 @@ struct BinarySearchTree
 // Creating a new binary search tree.
 struct BinarySearchTree binary_search_tree_constructor(int (*compare)(void *data_one, void *data_two));
 // Freeing the memory allocated for the binary search tree.
-void binary_search_tree_destructor(struct BinarySearchTree *tree);
+void binary_search_tree_destructor(struct BinarySearchTree *tree, void (*free_data)(void *data));
 
 // MARK: PUBLIC HELPER FUNCTIONS
 

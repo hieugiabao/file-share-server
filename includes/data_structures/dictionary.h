@@ -29,7 +29,7 @@ struct Dictionary
 // Creating a new dictionary.
 struct Dictionary dictionary_constructor(int (*compare)(void *key_one, void *key_two));
 // Freeing the memory allocated for the dictionary.
-void dictionary_destructor(struct Dictionary *dictionary);
+void dictionary_destructor(struct Dictionary *dictionary, void (*free_key)(void *key), void (*free_value)(void *value));
 
 // The compare_string_keys function is used to compare the keys of two entries.
 int compare_string_keys(void *entry_one, void *entry_two);

@@ -19,12 +19,10 @@ struct Queue
   // Retrieves the data from the first node in the chain.
   void *(*peek)(struct Queue *queue);
   // Removes the first node in the chain.
-  void (*pop)(struct Queue *queue);
+  void (*pop)(struct Queue *queue, void (*free_data)(void *data));
 };
 
-// Creating a new queue.
 struct Queue queue_constructor(void);
-// Freeing the memory allocated for the queue.
-void queue_destructor(struct Queue *queue);
+void queue_destructor(struct Queue *queue, void (*free_data)(void *data));
 
 #endif /* QUEUE_H */

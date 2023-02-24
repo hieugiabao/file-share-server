@@ -7,13 +7,13 @@
 /* Private member methods prototypes */
 
 struct Node *create_node_ll(void *data, unsigned long size);
-void destroy_node_ll(struct Node *node);
+void destroy_node_ll(struct Node *node, void (*free_data)(void *data));
 
 /* Public member methods prototypes */
 
 struct Node *iterate_ll(struct LinkedList *list, int index);
 void insert_ll(struct LinkedList *list, int index, void *data, unsigned long size);
-void remove_node_ll(struct LinkedList *list, int index);
+void remove_node_ll(struct LinkedList *list, int index, void (*free_data)(void *data));
 void *retrieve_ll(struct LinkedList *list, int index);
 void bubble_sort_ll(struct LinkedList *list, int (*compare)(void *a, void *b));
 short binary_search_ll(struct LinkedList *list, void *query, int (*compare)(void *a, void *b));
@@ -44,16 +44,19 @@ struct LinkedList linked_list_constructor()
   return new_list;
 }
 
+
 /**
- * This function removes all the elements from the list.
- *
+ * It removes all the elements from the list, starting from the first element, and calls the free_data
+ * function on each element's data
+ * 
  * @param list The list to be destructed.
+ * @param free_data A function pointer to a function that frees the data in the list.
  */
-void linked_list_destructor(struct LinkedList *list)
+void linked_list_destructor(struct LinkedList *list, void (*free_data)(void *data))
 {
   for (int i = 0; i < list->length; i++)
   {
-    list->remove(list, 0);
+    list->remove(list, 0, free_data);
   }
 }
 
@@ -77,14 +80,14 @@ struct Node *create_node_ll(void *data, unsigned long size)
 }
 
 /**
- * The destroy_node function removes a node by deallocating it's memory address.
- * This simply renames the node destructor function.
- *
+ * This function destroys a node and frees the memory associated with it.
+ * 
  * @param node The node to be destroyed.
+ * @param free_data a function pointer to a function that frees the data in the node.
  */
-void destroy_node_ll(struct Node *node)
+void destroy_node_ll(struct Node *node, void (*free_data)(void *data))
 {
-  node_destructor(node);
+  node_destructor(node, free_data);
 }
 
 /**
@@ -153,14 +156,16 @@ void insert_ll(struct LinkedList *list, int index, void *data, unsigned long siz
 }
 
 /**
- * The remove function removes a node from the linked list.
- *
+ * We find the node immediately before the node we want to remove, and then we set the next pointer of
+ * that node to the next pointer of the node we want to remove
+ * 
  * @param list The list to remove the node from
  * @param index the index of the item to remove
- *
- * @return The node at the given index
+ * @param free_data a function pointer to a function that frees the data in the node.
+ * 
+ * @return A pointer to the node at the specified index.
  */
-void remove_node_ll(struct LinkedList *list, int index)
+void remove_node_ll(struct LinkedList *list, int index, void (*free_data)(void *data))
 {
   // Check if the item being removed is the head
   if (index == 0)
@@ -169,7 +174,7 @@ void remove_node_ll(struct LinkedList *list, int index)
     if (node_to_remove)
     {
       list->head = node_to_remove->next;
-      destroy_node_ll(node_to_remove);
+      destroy_node_ll(node_to_remove, free_data);
     }
     else
     {
@@ -186,7 +191,7 @@ void remove_node_ll(struct LinkedList *list, int index)
     }
     struct Node *node_to_remove = cursor->next;
     cursor->next = node_to_remove->next;
-    destroy_node_ll(node_to_remove);
+    destroy_node_ll(node_to_remove, free_data);
   }
   // decrement the length of the list
   list->length--;
@@ -286,6 +291,15 @@ short binary_search_ll(struct LinkedList *list, void *query, int (*compare)(void
   return 0;
 }
 
+/**
+ * It takes a linked list and a function that converts a single element of the linked list to JSON, and
+ * returns a string that represents the entire linked list in JSON
+ * 
+ * @param list The LinkedList to convert to JSON
+ * @param to_json a function that takes a pointer to a data structure and returns a JSON string
+ * 
+ * @return A string containing the JSON representation of the list.
+ */
 char *to_json_ll(struct LinkedList *list, char *(*to_json)(void *data))
 {
   char *json = malloc(sizeof(char) * 2);

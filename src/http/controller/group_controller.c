@@ -367,7 +367,7 @@ char *get_my_groups(struct HTTPServer *server, struct HTTPRequest *request)
   char *response = groups->to_json(groups, (char *(*)(void *))group_to_json);
 
   user_free(user);
-  linked_list_destructor(groups);
+  linked_list_destructor(groups, (void (*)(void *))group_free);
 
   return format_200_with_content_type(response, "application/json");
 }

@@ -83,7 +83,7 @@ void http_server_destructor(struct HTTPServer *server)
   if (server->pool != NULL)
     thread_pool_destructor(server->pool);
   server_destructor(&server->server);
-  dictionary_destructor(&server->routes);
+  dictionary_destructor(&server->routes, NULL, NULL);
 }
 
 /**

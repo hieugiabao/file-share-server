@@ -55,9 +55,10 @@ struct HTTPRequest http_request_constructor(char *request_string)
  */
 void http_request_destructor(struct HTTPRequest *request)
 {
-  dictionary_destructor(&request->request_line);
-  dictionary_destructor(&request->header_fields);
-  dictionary_destructor(&request->body);
+  dictionary_destructor(&request->request_line, NULL, NULL);
+  dictionary_destructor(&request->header_fields, NULL, NULL);
+  dictionary_destructor(&request->body, NULL, NULL);
+  dictionary_destructor(&request->query, NULL, NULL);
 }
 
 /* Private member methods implementation */
@@ -124,11 +125,11 @@ void extract_header_fields(struct HTTPRequest *request, char *header_fields)
       }
       request->header_fields.insert(&request->header_fields, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
     }
-    headers.pop(&headers);
+    headers.pop(&headers, NULL);
     header = (char *)headers.peek(&headers);
   }
 
-  queue_destructor(&headers);
+  queue_destructor(&headers, NULL);
 }
 
 /**
@@ -165,10 +166,10 @@ void extract_body(struct HTTPRequest *request, char *body)
           value++;
         }
         body_dict.insert(&body_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
-        fields.pop(&fields);
+        fields.pop(&fields, NULL);
         field = fields.peek(&fields);
       }
-      queue_destructor(&fields);
+      queue_destructor(&fields, NULL);
     }
     else
     {
@@ -201,10 +202,10 @@ void extract_request_query(struct HTTPRequest *request, char *query_string)
       value++;
     }
     query_dict.insert(&query_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
-    fields.pop(&fields);
+    fields.pop(&fields, NULL);
     field = fields.peek(&fields);
   }
-  queue_destructor(&fields);
+  queue_destructor(&fields, NULL);
 
   request->query = query_dict;
 }
