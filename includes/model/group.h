@@ -36,6 +36,10 @@ struct Group
   int (*add_member)(struct Group *group, struct User *user);
   // Remove user from group members
   int (*remove_member)(struct Group *group, struct User *user);
+  // Check member in group
+  int (*is_member)(struct Group *group, struct User *user);
+  // Check group has directory
+  int (*has_directory)(struct Group *group, long directory_id);
   // Get group owner
   struct User *(*get_owner)(struct Group *group);
   // Get group members

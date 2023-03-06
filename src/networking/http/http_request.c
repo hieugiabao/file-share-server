@@ -31,15 +31,17 @@ struct HTTPRequest http_request_constructor(char *request_string)
 
   for (size_t i = 0; i < strlen(requested) - 2; i++)
   {
-    if (requested[i] == '\n' && requested[i + 1] == '\n')
+    if (requested[i] == '\r' && requested[i + 1] == '\n' && requested[i + 2] == '\r' && requested[i + 3] == '\n')
     {
-      requested[i + 1] = '|';
+      requested[i + 3] = '|';
+      i += 3;
     }
   }
   // Separate the request string into its components
   char *request_line = strtok(requested, "\n");
   char *header_fields = strtok(NULL, "|");
-  char *body = strtok(NULL, "|");
+  char *body = strtok(NULL, "\0");
+
   // Parse each section as needed
   extract_request_line_fields(&request, request_line);
   extract_header_fields(&request, header_fields);
@@ -123,7 +125,11 @@ void extract_header_fields(struct HTTPRequest *request, char *header_fields)
       {
         value++; // Remove the leading white space
       }
-      request->header_fields.insert(&request->header_fields, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
+      if (value[strlen(value) - 1] == '\r')
+      {
+        value[strlen(value) - 1] = '\0'; // Remove the trailing carriage return
+      }
+      request->header_fields.insert(&request->header_fields, key, sizeof(char[strlen(key)+1]), value, sizeof(char[strlen(value)+1]));
     }
     headers.pop(&headers, NULL);
     header = (char *)headers.peek(&headers);
@@ -141,17 +147,17 @@ void extract_header_fields(struct HTTPRequest *request, char *header_fields)
 void extract_body(struct HTTPRequest *request, char *body)
 {
   char *content_type = (char *)request->header_fields.search(&request->header_fields, "Content-Type", sizeof("Content-Type"));
-
+  struct Dictionary body_dict = dictionary_constructor(compare_string_keys);
   if (content_type)
   {
-    struct Dictionary body_dict = dictionary_constructor(compare_string_keys);
     if (strcmp(content_type, "application/x-www-form-urlencoded") == 0)
     {
       struct Queue fields = queue_constructor();
       char *field = strtok(body, "&");
       while (field)
       {
-        fields.push(&fields, field, sizeof(char[strlen(field)]));
+        field[strlen(field)] = '\0'; // Remove the trailing carriage return
+        fields.push(&fields, field, sizeof(char[strlen(field)+1]));
         field = strtok(NULL, "&");
       }
 
@@ -175,9 +181,8 @@ void extract_body(struct HTTPRequest *request, char *body)
     {
       body_dict.insert(&body_dict, "data", sizeof("data"), body, sizeof(char[strlen(body)]));
     }
-
-    request->body = body_dict;
   }
+  request->body = body_dict;
 }
 
 void extract_request_query(struct HTTPRequest *request, char *query_string)

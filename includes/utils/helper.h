@@ -10,5 +10,8 @@ char *convert_double_to_string(double);
 char *convert_long_to_string(long);
 
 char *get_current_time();
+int remove_directory(const char *path);
+int create_directory(const char *path);
+int move_file(const char *src, const char *dest);
 
 #endif

@@ -18,20 +18,20 @@ char *create_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *name = request->body.search(&request->body, "name", sizeof(char[strlen("name")]));
+  char *description = request->body.search(&request->body, "description", sizeof(char[strlen("description")]));
+  char *avatar = request->body.search(&request->body, "avatar", sizeof(char[strlen("avatar")]));
+
+  if (name == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *name = request->query.search(&request->query, "name", sizeof(char[strlen("name")]));
-  char *description = request->query.search(&request->query, "description", sizeof(char[strlen("description")]));
-  char *avatar = request->query.search(&request->query, "avatar", sizeof(char[strlen("avatar")]));
-
-  if (name == NULL)
-  {
-    return format_422();
   }
 
   if (group_find_by_name(name) != NULL)
@@ -56,21 +56,21 @@ char *update_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+  char *name = request->body.search(&request->body, "name", sizeof(char[strlen("name")]));
+  char *description = request->body.search(&request->body, "description", sizeof(char[strlen("description")]));
+  char *avatar = request->body.search(&request->body, "avatar", sizeof(char[strlen("avatar")]));
+
+  if (code == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
-  char *name = request->query.search(&request->query, "name", sizeof(char[strlen("name")]));
-  char *description = request->query.search(&request->query, "description", sizeof(char[strlen("description")]));
-  char *avatar = request->query.search(&request->query, "avatar", sizeof(char[strlen("avatar")]));
-
-  if (code == NULL)
-  {
-    return format_422();
   }
 
   struct Group *group = group_find_by_code(code);
@@ -121,18 +121,18 @@ char *get_group_members(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+
+  if (code == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
-
-  if (code == NULL)
-  {
-    return format_422();
   }
 
   struct Group *group = group_find_by_code(code);
@@ -168,18 +168,18 @@ char *delete_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+
+  if (code == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
-
-  if (code == NULL)
-  {
-    return format_422();
   }
 
   struct Group *group = group_find_by_code(code);
@@ -218,18 +218,18 @@ char *join_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+
+  if (code == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
-
-  if (code == NULL)
-  {
-    return format_422();
   }
 
   struct Group *group = group_find_by_code(code);
@@ -262,18 +262,18 @@ char *leave_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+
+  if (code == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
-
-  if (code == NULL)
-  {
-    return format_422();
   }
 
   struct Group *group = group_find_by_code(code);
@@ -306,19 +306,19 @@ char *kick_member_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+  char *member_id = request->body.search(&request->body, "member_id", sizeof(char[strlen("member_id")]));
+
+  if (code == NULL || member_id == NULL)
+  {
+    return format_422();
+  }
+
   struct User *user = get_user_from_request(request, NULL);
 
   if (user == NULL)
   {
     return format_401();
-  }
-
-  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
-  char *member_id = request->query.search(&request->query, "member_id", sizeof(char[strlen("member_id")]));
-
-  if (code == NULL || member_id == NULL)
-  {
-    return format_422();
   }
 
   struct Group *group = group_find_by_code(code);

@@ -1,5 +1,6 @@
 #include "model/group.h"
 #include "database/db.h"
+#include "setting.h"
 #include "utils/helper.h"
 
 #include <stdlib.h>
@@ -13,14 +14,17 @@ int group_update(struct Group *group);
 int group_remove(struct Group *group);
 int group_add_member(struct Group *group, struct User *user);
 int group_leave(struct Group *group, struct User *user);
+int group_is_member(struct Group *group, struct User *user);
 struct User *group_get_owner(struct Group *group);
 struct LinkedList *group_get_members(struct Group *group);
+int group_has_directory(struct Group *group, long directory_id);
 
 /* Private helper function prototypes */
 void _retreive_code_callback(sqlite3_stmt *res, void *arg);
 void _get_group_members_callback(sqlite3_stmt *res, void *arg);
 void _get_group_callback(sqlite3_stmt *res, void *arg);
 void _get_groups_callback(sqlite3_stmt *res, void *arg);
+void _checkable_callback(sqlite3_stmt *res, void *arg);
 
 /* Public member functions */
 
@@ -59,6 +63,8 @@ group_new(char *name, char *description, char *avatar, long owner_id)
   group->get_owner = group_get_owner;
   group->get_members = group_get_members;
   group->to_json = group_to_json;
+  group->is_member = group_is_member;
+  group->has_directory = group_has_directory;
 
   group->_owner = NULL;
   group->_members = NULL;
@@ -77,16 +83,10 @@ void group_free(struct Group *group)
   free(group->description);
   free(group->avatar);
   free(group->code);
-
   if (group->_owner != NULL)
-  {
     user_free(group->_owner);
-  }
-
   if (group->_members != NULL)
-  {
     linked_list_destructor(group->_members, (void (*)(void *))user_free);
-  }
   free(group);
 }
 
@@ -122,6 +122,18 @@ int group_save(struct Group *group)
     return -1;
   group->code = strdup(code);
   free(code);
+
+  // create folder
+  char *folder = malloc(100);
+  sprintf(folder, "%s/%s", UPLOAD_DIR, group->code);
+  if (create_directory(folder))
+  {
+    free(folder);
+    query = "DELETE FROM groups WHERE id = ?";
+    pool->exec(pool, NULL, NULL, query, 1, convert_long_to_string(group->id));
+    return -1;
+  }
+  free(folder);
 
   query = "INSERT INTO group_members (group_id, user_id) VALUES (?, ?)";
   res = pool->exec(pool, NULL, NULL, query, 2, convert_long_to_string(group->id), convert_long_to_string(group->owner_id));
@@ -179,6 +191,12 @@ int group_remove(struct Group *group)
 
   if (res != SQLITE_OK)
     return -1;
+
+  // delete folder
+  char *folder = malloc(100);
+  sprintf(folder, "%s/%s", UPLOAD_DIR, group->code);
+  remove_directory(folder);
+  free(folder);
 
   return 0;
 }
@@ -305,6 +323,50 @@ char *group_to_json(struct Group *group)
   return json;
 }
 
+/**
+ * It checks if a user is a member of a group
+ *
+ * @param group The group to check if the user is a member of.
+ * @param user The user to check for membership
+ *
+ * @return 1 if the user is a member of the group, 0 otherwise. -1 on error.
+ */
+int group_is_member(struct Group *group, struct User *user)
+{
+  struct DatabaseManager *manager = get_db_manager();
+  struct DatabasePool *pool = manager->get_pool(manager, NULL);
+  if (pool == NULL)
+    return -1;
+
+  char *query = "SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?";
+  int is_member = 0;
+
+  int res = pool->exec(pool, _checkable_callback, &is_member, query, 2, convert_long_to_string(group->id), convert_long_to_string(user->id));
+
+  if (res != SQLITE_OK)
+    return -1;
+
+  return is_member;
+}
+
+int group_has_directory(struct Group *group, long directory_id)
+{
+  struct DatabaseManager *manager = get_db_manager();
+  struct DatabasePool *pool = manager->get_pool(manager, NULL);
+  if (pool == NULL)
+    return -1;
+
+  char *query = "SELECT 1 FROM directories WHERE group_id = ? AND id = ?";
+  int has_dir = 0;
+
+  int res = pool->exec(pool, _checkable_callback, &has_dir, query, 2, convert_long_to_string(group->id), convert_long_to_string(directory_id));
+
+  if (res != SQLITE_OK)
+    return -1;
+
+  return has_dir;
+}
+
 /* Private helper function implements */
 
 /**
@@ -358,6 +420,19 @@ void _get_groups_callback(sqlite3_stmt *res, void *arg)
   groups->insert(groups, 0, group, sizeof(struct Group));
 }
 
+/**
+ * It checks if a table
+ * exists
+ * 
+ * @param res The result of the query.
+ * @param arg The argument passed to the callback function.
+ */
+void _checkable_callback(sqlite3_stmt *res, void *arg)
+{
+  (void)res;
+  *(int *)arg = 1;
+}
+
 /* Public function implements */
 
 /**
@@ -374,7 +449,7 @@ struct Group *group_find_by_id(long id)
   if (pool == NULL)
     return NULL;
 
-  char *query = "SELECT id, name, description, avatar, status, owner_id. code FROM groups WHERE id = ?";
+  char *query = "SELECT id, name, description, avatar, status, owner_id, code FROM groups WHERE id = ?";
 
   struct Group *group = NULL;
 

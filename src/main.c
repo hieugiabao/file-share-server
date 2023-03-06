@@ -4,13 +4,10 @@
 #include "database/db.h"
 #include "model/user.h"
 #include "http/controller/controller.h"
+#include "setting.h"
 
 #include <signal.h>
 #include <setjmp.h>
-
-#define UPLOAD_DIR "./upload"
-#define DATABASE_URI "test.sqlite"
-#define DATABASE_INIT_FILE "create_table.sql"
 
 static jmp_buf env;
 
@@ -45,9 +42,9 @@ int main()
   signal(SIGINT, sigintHandler);
 
   struct HTTPServer http_server;
-  struct TFTPServer tftp_server;
+  // struct TFTPServer tftp_server;
 
-  struct ThreadPool *pool = thread_pool_constructor(2);
+  struct ThreadPool *pool = thread_pool_constructor(1);
   struct DatabaseManager *manager = get_db_manager();
 
   if (!setjmp(env))
@@ -76,7 +73,7 @@ int main()
   else
   {
     database_manager_destructor(manager);
-    tftp_server_destructor(&tftp_server);
+    // tftp_server_destructor(&tftp_server);
     http_server_destructor(&http_server);
     thread_pool_destructor(pool);
     log_info("Closing server...");
@@ -112,12 +109,24 @@ void *http_init_handler(void *arg)
 
   // group
   http_server->register_routes(http_server, create_group, "/group/create", 1, POST);
-  http_server->register_routes(http_server, update_group, "/group/update", 1, POST);
+  http_server->register_routes(http_server, update_group, "/group/update", 1, PUT);
   http_server->register_routes(http_server, get_group_members, "/group/members", 1, GET);
   http_server->register_routes(http_server, delete_group, "/group/delete", 1, DELETE);
   http_server->register_routes(http_server, join_group, "/group/join", 1, POST);
   http_server->register_routes(http_server, leave_group, "/group/leave", 1, POST);
   http_server->register_routes(http_server, kick_member_group, "/group/kick", 1, POST);
+  http_server->register_routes(http_server, get_group_node_tree, "/group/node", 1, GET);
+
+  http_server->register_routes(http_server, make_directory, "/directory/create", 1, POST);
+  http_server->register_routes(http_server, delete_directory, "/directory/delete", 1, DELETE);
+  http_server->register_routes(http_server, update_directory, "/directory/update", 1, PUT);
+  http_server->register_routes(http_server, get_directory_children, "/directory/getchild", 1, GET);
+
+  http_server->register_routes(http_server, create_file, "/file/create", 1, POST);
+  http_server->register_routes(http_server, delete_file, "/file/delete", 1, DELETE);
+  http_server->register_routes(http_server, update_file, "/file/update", 1, PUT);
+  http_server->register_routes(http_server, get_file, "/file/get", 1, GET);
+
   http_server->launch(http_server);
 
   return NULL;

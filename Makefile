@@ -82,10 +82,14 @@ SRCS	=	\
 			database/db.c													\
 			http/controller/user_controller.c		  \
 			http/controller/group_controller.c		\
+			http/controller/directory_controller.c\
+			http/controller/file_controller.c			\
 			http/helper/helper.c									\
 			model/user.c  												\
 			model/session.c												\
 			model/group.c													\
+			model/directory.c											\
+			model/file.c													\
 			main.c																\
 
 # ---------------------------------------------------------------------------- #

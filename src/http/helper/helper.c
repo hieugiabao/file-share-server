@@ -126,7 +126,8 @@ char *format_200_with_content_type_and_length(char *content, char *content_type,
 
 struct User *get_user_from_request(struct HTTPRequest *request, char *token)
 {
-  char *auth_header = request->header_fields.search(&request->header_fields, "Authorization", sizeof(char[strlen("Authorization")]));
+  char *auth_header = request->header_fields.search(&request->header_fields, "Authorization", sizeof(char[strlen("Authorization")+1]));
+
   if (auth_header == NULL)
   {
     return NULL;
@@ -145,7 +146,8 @@ struct User *get_user_from_request(struct HTTPRequest *request, char *token)
   }
 
   size_t length = 0;
-  unsigned char *_decoded_token = base64_decode(token_value, strlen(token_value) - 1, &length);
+  unsigned char *_decoded_token = base64_decode(token_value, strlen(token_value), &length);
+  
   if (_decoded_token == NULL)
   {
     return NULL;

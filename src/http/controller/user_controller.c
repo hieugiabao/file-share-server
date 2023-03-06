@@ -20,8 +20,8 @@
 char *login(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
-  char *username = request->query.search(&request->query, "username", 9);
-  char *password = request->query.search(&request->query, "password", 9);
+  char *username = request->body.search(&request->body, "username", 9);
+  char *password = request->body.search(&request->body, "password", 9);
 
   if (username == NULL || password == NULL)
   {
@@ -65,9 +65,9 @@ char *login(struct HTTPServer *server, struct HTTPRequest *request)
 char *register_user(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
-  char *username = request->query.search(&request->query, "username", 9);
-  char *password = request->query.search(&request->query, "password", 9);
-  char *display_name = request->query.search(&request->query, "display_name", 13);
+  char *username = request->body.search(&request->body, "username", 9);
+  char *password = request->body.search(&request->body, "password", 9);
+  char *display_name = request->body.search(&request->body, "display_name", 13);
 
   if (username == NULL || password == NULL || display_name == NULL)
   {

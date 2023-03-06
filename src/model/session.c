@@ -14,7 +14,6 @@ int is_expired(struct Session *session);
 
 void _find_session_callback(sqlite3_stmt *res, void *arg);
 void _find_token_callback(sqlite3_stmt *res, void *arg);
-void _get_user_callback(sqlite3_stmt *res, void *arg);
 time_t time_from_string(char *str);
 
 /* Public methods implements */
@@ -139,13 +138,8 @@ struct User *get_user(struct Session *session)
     return NULL;
   }
 
-  char *sql = "SELECT id, display_name, username, status FROM users WHERE id = ?";
-  struct User *user = NULL;
-  int res = pool->exec(pool, _get_user_callback, &user, sql, 1, convert_long_to_string(session->user_id));
-  if (res != SQLITE_OK)
-  {
-    return NULL;
-  }
+  struct User *user = user_find_by_id(session->user_id);
+
   session->_user = user;
   return user;
 }
@@ -222,24 +216,6 @@ struct Session *session_find_by_token(char *token)
     return NULL;
   }
   return session;
-}
-
-/**
- * It takes a SQLite result set and a pointer to a User struct, and it fills the User struct with the data from the result
- * set
- *
- * @param res The result of the query.
- * @param arg A pointer to the variable that will hold the result.
- */
-void _get_user_callback(sqlite3_stmt *res, void *arg)
-{
-  struct User *user = user_new(
-      (char *)sqlite3_column_text(res, 1), // display_name
-      (char *)sqlite3_column_text(res, 2), // username
-      "");                                 // password
-  user->id = sqlite3_column_int(res, 0);
-  user->status = sqlite3_column_int(res, 3);
-  *(struct User **)arg = user;
 }
 
 /**
