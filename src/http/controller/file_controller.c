@@ -37,7 +37,7 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
   struct Group *group = group_find_by_id(atol(group_id));
   if (group == NULL)
   {
-    return format_400();
+    return format_404();
   }
 
   if (group->is_member(group, user) != 1)

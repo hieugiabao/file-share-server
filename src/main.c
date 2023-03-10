@@ -103,7 +103,8 @@ void *http_init_handler(void *arg)
   // auth
   http_server->register_routes(http_server, login, "/login", 1, POST);
   http_server->register_routes(http_server, register_user, "/register", 1, POST);
-  http_server->register_routes(http_server, get_user_info, "/get_me", 1, GET);
+  http_server->register_routes(http_server, get_me_info, "/me/info", 1, GET);
+  http_server->register_routes(http_server, get_user_info, "/user/info", 1, GET);
   http_server->register_routes(http_server, get_my_groups, "/me/group", 1, GET);
   http_server->register_routes(http_server, logout, "/logout", 1, POST);
 
@@ -125,7 +126,7 @@ void *http_init_handler(void *arg)
   http_server->register_routes(http_server, create_file, "/file/create", 1, POST);
   http_server->register_routes(http_server, delete_file, "/file/delete", 1, DELETE);
   http_server->register_routes(http_server, update_file, "/file/update", 1, PUT);
-  http_server->register_routes(http_server, get_file, "/file/get", 1, GET);
+  http_server->register_routes(http_server, get_file, "/file/info", 1, GET);
 
   http_server->launch(http_server);
 

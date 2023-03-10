@@ -310,16 +310,8 @@ struct LinkedList *group_get_members(struct Group *group)
  */
 char *group_to_json(struct Group *group)
 {
-  struct User *owner = group_get_owner(group);
-  char *owner_json = owner->to_json(owner);
   char *json = malloc(sizeof(char) * 1024);
-  sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"description\":\"%s\",\"avatar\":\"%s\",\"status\":%d,\"code\": \"%s\",\"owner\":%s}",
-          group->id, group->name,
-          group->description ? group->description : "",
-          group->avatar ? group->avatar : "",
-          group->status,
-          group->code,
-          owner_json);
+  sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"description\":\"%s\",\"avatar\":\"%s\",\"status\":%d,\"code\": \"%s\",\"owner_id\":%ld,\"created_at\":\"%s\"}", group->id, group->name, group->description ? group->description : "", group->avatar ? group->avatar : "", group->status, group->code, group->owner_id, group->created_at);
   return json;
 }
 

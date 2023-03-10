@@ -103,7 +103,7 @@ char *register_user(struct HTTPServer *server, struct HTTPRequest *request)
  *
  * @return A pointer to a string.
  */
-char *get_user_info(struct HTTPServer *server, struct HTTPRequest *request)
+char *get_me_info(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
   struct User *user = get_user_from_request(request, NULL);
@@ -115,6 +115,22 @@ char *get_user_info(struct HTTPServer *server, struct HTTPRequest *request)
   char *response = user->to_json(user);
   user_free(user);
   return format_200_with_content_type(response, "application/json");
+}
+
+char *get_user_info(struct HTTPServer *server, struct HTTPRequest *request)
+{
+  (void) server;
+  char *user_id = request->query.search(&request->query, "user_id", 8);
+  if (user_id == NULL)
+    return format_422();
+
+  struct User *user = get_user_from_request(request, NULL);
+  if (user == NULL)
+    return format_400();
+  
+  char *res = user->to_json(user);
+  user_free(user);
+  return format_200_with_content_type(res, "application/json");
 }
 
 char *logout(struct HTTPServer *server, struct HTTPRequest *request)

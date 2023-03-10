@@ -34,11 +34,6 @@ char *create_group(struct HTTPServer *server, struct HTTPRequest *request)
     return format_401();
   }
 
-  if (group_find_by_name(name) != NULL)
-  {
-    return format_422();
-  }
-
   struct Group *group = group_new(name, description, avatar, user->id);
   if (group->save(group))
   {
@@ -121,7 +116,7 @@ char *get_group_members(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
-  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+  char *code = request->query.search(&request->query, "code", sizeof(char[strlen("code")]));
 
   if (code == NULL)
   {
@@ -239,6 +234,11 @@ char *join_group(struct HTTPServer *server, struct HTTPRequest *request)
     return format_404();
   }
 
+  if (group->is_member(group, user))
+  {
+    return format_403();
+  }
+
   if (group->add_member(group, user))
   {
     return format_500();
@@ -281,6 +281,11 @@ char *leave_group(struct HTTPServer *server, struct HTTPRequest *request)
   if (group == NULL)
   {
     return format_404();
+  }
+
+  if (!group->is_member(group, user))
+  {
+    return format_403();
   }
 
   if (group->remove_member(group, user))
@@ -338,6 +343,11 @@ char *kick_member_group(struct HTTPServer *server, struct HTTPRequest *request)
   if (member == NULL)
   {
     return format_404();
+  }
+
+  if (!group->is_member(group, member))
+  {
+    return format_400();
   }
 
   if (group->remove_member(group, member))
