@@ -2,6 +2,7 @@
 #include "http/controller/file_controller.h"
 #include "model/file.h"
 #include "http/helper/helper.h"
+#include "setting.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -323,7 +324,9 @@ char *save_file(struct HTTPServer *server, struct HTTPRequest *request)
   if (file->save(file) != 0)
   {
     // remvoe file
-    remove(path);
+    char fullpath[1024];
+    sprintf(fullpath, "%s/%s", UPLOAD_DIR, path);
+    remove(fullpath);
 
     user_free(user);
     file_free(file);

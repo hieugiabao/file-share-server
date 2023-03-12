@@ -1,5 +1,6 @@
 #include "networking/tftp/tftp_client_handle.h"
 #include "networking/checksum.h"
+#include "setting.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -685,7 +686,7 @@ void __handle_read(TFTPClientHandler *handler, const char *file_name)
   long filelen;
 
   char full_path[128];
-  sprintf(full_path, "upload/%s", file_name);
+  sprintf(full_path, "%s/%s", UPLOAD_DIR, file_name);
   if (access(full_path, F_OK) != 0)
   {
     _terminate(handler, FILE_NOT_FOUND, "File not found", NULL);
@@ -713,7 +714,7 @@ void __handle_write(TFTPClientHandler *handler, const char *file_name)
     _terminate(handler, ACCESS_VIOLATION, "Upload not allowed", NULL);
   }
   char full_path[1024];
-  sprintf(full_path, "%s/%s", handler->server.upload_dir, file_name);
+  sprintf(full_path, "%s/%s", UPLOAD_DIR, file_name);
 
   if (access(full_path, F_OK) == 0)
   {

@@ -47,7 +47,7 @@
 # base prefix of the directory.                                                #
 # ---------------------------------------------------------------------------- #
 
-NAME	=	program.out
+NAME	=	programlib.a
 
 # ---------------------------------------------------------------------------- #
 
@@ -90,7 +90,7 @@ SRCS	=	\
 			model/group.c													\
 			model/directory.c											\
 			model/file.c													\
-			main.c																\
+			# main.c																\
 
 # ---------------------------------------------------------------------------- #
 # PROJECT CONFIGURATION                                                        #
@@ -102,6 +102,7 @@ DIRSRC	=	src
 DIRINC	=	includes
 DIRLIB	=	libs
 DIRTST	=	tests
+DIRMAIN = main
 DIROBJ	=	.objs
 DIRDEP	=	.deps
 
@@ -190,8 +191,8 @@ all: $(NAME)
 
 $(NAME): $(DIROBJ) $(DIRDEP) $(OBJ) $(LIBS)
 	@printf "\033[32m[ %s ]\033[0m %s\n" "$(NAME)" "link objects..."
-	@$(CC) $(OBJ) -o $(NAME) $(LDFLAGS) $(LDLIBS)
-
+	@$(AR) $(ARFLAGS) $(NAME) $(OBJ)
+	@ranlib $(NAME)
 libs		:
 
 fcleanlibs	:
@@ -211,7 +212,15 @@ re			:	fcleanlibs fclean all
 # ---------------------------------------------------------------------------- #
 # CUSTOM RULES                                                                 #
 # ---------------------------------------------------------------------------- #
+http: all
+	@printf "\033[32m[ http.out ]\033[0m %s\n" "Compiling http server..."
+	@$(CC) $(CFLAGS) -c $(DIRMAIN)/http.c -o http.o -I $(DIRINC)
+	@$(CC) http.o $(NAME) $(LDFLAGS) $(LDLIBS) -o http.out
 
+tftp: all
+	@printf "\033[32m[ tftp.out ]\033[0m %s\n" "Compiling tftp server..."
+	@$(CC) $(CFLAGS) -c $(DIRMAIN)/tftp.c -o tftp.o -I $(DIRINC)
+	@$(CC) tftp.o $(NAME) -o tftp.out
 
 # ---------------------------------------------------------------------------- #
 # /!\ PRIVATE RULES /!\                                                        #

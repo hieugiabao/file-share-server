@@ -2,6 +2,7 @@
 #include "database/db.h"
 #include "model/directory.h"
 #include "utils/helper.h"
+#include "setting.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -185,7 +186,9 @@ int file_remove(struct File *file)
     return -1;
   }
   // delete file from disk
-  remove(file->path);
+  char fullpath[1024];
+  sprintf(fullpath, "%s/%s", UPLOAD_DIR, file->path);
+  remove(fullpath);
 
   return 0;
 }

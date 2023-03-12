@@ -200,7 +200,10 @@ int directory_remove(struct Directory *directory)
   {
     return -1;
   }
-  remove_directory(directory->path);
+
+  char fullpath[1024];
+  sprintf(fullpath, "%s/%s", UPLOAD_DIR, directory->path);
+  remove_directory(fullpath);
 
   return 0;
 }
