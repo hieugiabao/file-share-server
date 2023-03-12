@@ -2,6 +2,7 @@
 #include "model/directory.h"
 #include "http/controller/directory_controller.h"
 #include "http/helper/helper.h"
+#include "logger/logger.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -97,7 +98,7 @@ char *make_directory(struct HTTPServer *server, struct HTTPRequest *request)
 char *delete_directory(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
-  char *id = request->body.search(&request->body, "id", 3);
+  char *id = request->body.search(&request->body, "directory_id", 13);
   if (id == NULL)
   {
     return format_422();
@@ -221,7 +222,6 @@ char *get_directory_children(struct HTTPServer *server, struct HTTPRequest *requ
   {
     return format_500();
   }
-
   char *json = children->to_json(children, node_to_json);
 
   user_free(user);
@@ -246,13 +246,13 @@ char *node_to_json(void *node)
   {
   case FDIRECTORY:
     char *dir_js = n->node.directory->to_json(n->node.directory);
-    fjson = malloc(strlen(dir_js) + 35);
+    fjson = malloc(strlen(dir_js) + 100);
     sprintf(fjson, "{\"node\":%s, \"type\": \"directory\"}", dir_js);
     free(dir_js);
     break;
   case FFILE:
     char *file_js = n->node.file->to_json(n->node.file);
-    fjson = malloc(strlen(file_js) + 30);
+    fjson = malloc(strlen(file_js) + 100);
     sprintf(fjson, "{\"node\":%s, \"type\": \"file\"}", file_js);
     free(file_js);
     break;

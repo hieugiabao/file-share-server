@@ -1,6 +1,7 @@
 
 #include "networking/http/http_request.h"
 #include "data_structures/queue.h"
+#include "logger/logger.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -129,7 +130,7 @@ void extract_header_fields(struct HTTPRequest *request, char *header_fields)
       {
         value[strlen(value) - 1] = '\0'; // Remove the trailing carriage return
       }
-      request->header_fields.insert(&request->header_fields, key, sizeof(char[strlen(key)+1]), value, sizeof(char[strlen(value)+1]));
+      request->header_fields.insert(&request->header_fields, key, sizeof(char[strlen(key) + 1]), value, sizeof(char[strlen(value) + 1]));
     }
     headers.pop(&headers, NULL);
     header = (char *)headers.peek(&headers);
@@ -150,37 +151,30 @@ void extract_body(struct HTTPRequest *request, char *body)
   struct Dictionary body_dict = dictionary_constructor(compare_string_keys);
   if (content_type)
   {
-    if (strcmp(content_type, "application/x-www-form-urlencoded") == 0)
+    struct Queue fields = queue_constructor();
+    char *field = strtok(body, "&");
+    while (field)
     {
-      struct Queue fields = queue_constructor();
-      char *field = strtok(body, "&");
-      while (field)
-      {
-        field[strlen(field)] = '\0'; // Remove the trailing carriage return
-        fields.push(&fields, field, sizeof(char[strlen(field)+1]));
-        field = strtok(NULL, "&");
-      }
+      field[strlen(field)] = '\0'; // Remove the trailing carriage return
+      fields.push(&fields, field, sizeof(char[strlen(field) + 1]));
+      field = strtok(NULL, "&");
+    }
 
-      field = fields.peek(&fields);
-      while (field)
-      {
-        char *key = strtok(field, "=");
-        char *value = strtok(NULL, "\0");
-        // Remove unnecessary leading white space.
-        if (value[0] == ' ')
-        {
-          value++;
-        }
-        body_dict.insert(&body_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
-        fields.pop(&fields, NULL);
-        field = fields.peek(&fields);
-      }
-      queue_destructor(&fields, NULL);
-    }
-    else
+    field = fields.peek(&fields);
+    while (field)
     {
-      body_dict.insert(&body_dict, "data", sizeof("data"), body, sizeof(char[strlen(body)]));
+      char *key = strtok(field, "=");
+      char *value = strtok(NULL, "\0");
+      // Remove unnecessary leading white space.
+      if (value[0] == ' ')
+      {
+        value++;
+      }
+      body_dict.insert(&body_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
+      fields.pop(&fields, NULL);
+      field = fields.peek(&fields);
     }
+    queue_destructor(&fields, NULL);
   }
   request->body = body_dict;
 }

@@ -57,6 +57,11 @@ file_new(char *fullname, long size, long user_id, long group_id, long *directory
   file->get_directory = file_get_directory;
   file->to_json = file_to_json;
 
+  file->_directory = NULL;
+  file->_group = NULL;
+  file->_owner = NULL;
+  file->_modified_by = NULL;
+
   return file;
 }
 

@@ -44,7 +44,7 @@ int main()
   if (!setjmp(env))
   {
     int ret;
-    if ((ret = logger_init(D_DEBUG, NULL)) < 0)
+    if ((ret = logger_init(D_TRACE, NULL)) < 0)
       return (ret);
     if (connect_db(DATABASE_URI, NULL) == -1)
     {

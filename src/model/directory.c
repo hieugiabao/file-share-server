@@ -2,6 +2,7 @@
 #include "database/db.h"
 #include "model/file.h"
 #include "setting.h"
+#include "logger/logger.h"
 #include "utils/helper.h"
 
 #include <stdlib.h>
@@ -56,6 +57,7 @@ directory_new(const char *name, long user_id, long group_id, long *parent_id)
   directory->get_children = directory_get_children;
   directory->to_json = directory_json;
 
+  directory->path = NULL;
   directory->_group = NULL;
   directory->_children = NULL;
   directory->_parent = NULL;
@@ -71,7 +73,8 @@ directory_new(const char *name, long user_id, long group_id, long *parent_id)
  */
 void directory_free(struct Directory *directory)
 {
-  user_free(directory->_owner);
+  if (directory->_owner != NULL)
+    user_free(directory->_owner);
   if (directory->_group != NULL)
     group_free(directory->_group);
   if (directory->_parent != NULL)
@@ -131,7 +134,7 @@ int directory_save(struct Directory *directory)
   // find path
   if (directory->parent_id != 0)
   {
-    struct Directory *parent = directory->get_parent(directory);
+    struct Directory *parent = directory_find_by_id(directory->parent_id);
     if (parent == NULL)
     {
       return -1;
@@ -140,6 +143,7 @@ int directory_save(struct Directory *directory)
     directory->permission = parent->permission;
     directory->path = malloc(strlen(parent->path) + strlen(directory->name) + 2);
     sprintf(directory->path, "%s/%s", parent->path, directory->name);
+    directory_free(parent);
   }
   else
   {

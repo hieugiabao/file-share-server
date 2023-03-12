@@ -24,6 +24,7 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
   // char *size = request->body.search(&request->body, "size", 5);
   char *group_id = request->body.search(&request->body, "group_id", 9);
   char *directory_id = request->body.search(&request->body, "directory_id", 13);
+  char path[1024];
 
   if (name == NULL || group_id == NULL)
   {
@@ -62,7 +63,12 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
       directory_free(directory);
       return format_403(); // The user is not allowed to create a file in the directory
     }
+    sprintf(path, "%s/%s", directory->path, name);
     directory_free(directory);
+  }
+  else
+  {
+    sprintf(path, "%s/%s", group->code, name);
   }
 
   struct File *file = file_find_by_name(name, group->id, directory_id_ptr);
@@ -70,42 +76,15 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
   {
     group_free(group);
     user_free(user);
-    file_free(file);
-  return format_409();
-  }
-
-  file = file_new(
-      name,
-      0,
-      user->id,
-      group->id,
-      directory_id_ptr);
-  free(directory_id_ptr);
-
-  struct Directory *directory = file->get_directory(file);
-  if (directory != NULL)
-  {
-    file->path = malloc(strlen(directory->path) + strlen(file->name) + 2);
-    sprintf(file->path, "%s/%s", directory->path, file->name);
-  }
-  else
-  {
-    struct Group *group = file->get_group(file);
-    file->path = malloc(strlen(file->name) + strlen(group->code) + 2);
-    sprintf(file->path, "%s/%s", group->code, file->name);
-  }
-
-  if (file == NULL)
-  {
-    return format_500();
+    return format_409();
   }
 
   char json[4096];
-  sprintf(json, "{\"path\": %s}", file->path);
+  sprintf(json, "{\"path\": \"%s\"}", path);
 
-  file_free(file);
   user_free(user);
   group_free(group);
+  free(directory_id_ptr);
 
   return format_200_with_content_type(json, "application/json");
 }
@@ -306,10 +285,13 @@ char *save_file(struct HTTPServer *server, struct HTTPRequest *request)
   {
     return format_401();
   }
+  char fullpath[1024];
+  sprintf(fullpath, "%s/%s", UPLOAD_DIR, path);
 
   // check file path exists
-  if (access(path, F_OK) != 0)
+  if (access(fullpath, F_OK) != 0)
   {
+    printf("Not oke: %s\n", fullpath);
     return format_400();
   }
 
@@ -324,8 +306,6 @@ char *save_file(struct HTTPServer *server, struct HTTPRequest *request)
   if (file->save(file) != 0)
   {
     // remvoe file
-    char fullpath[1024];
-    sprintf(fullpath, "%s/%s", UPLOAD_DIR, path);
     remove(fullpath);
 
     user_free(user);
@@ -333,8 +313,10 @@ char *save_file(struct HTTPServer *server, struct HTTPRequest *request)
     return format_500();
   }
 
+  char *json = file->to_json(file);
+
   user_free(user);
   file_free(file);
 
-  return format_200();
+  return format_200_with_content_type(json, "application/json");
 }

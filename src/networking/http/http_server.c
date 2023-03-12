@@ -156,6 +156,7 @@ void *http_handler(void *arg)
   // Read the client's request.
   char request_string[30000];
   read(client_server->client, request_string, 30000);
+  log_trace("Request: %s", request_string);
   // Parse the request string into a usable format.
   struct HTTPRequest request = http_request_constructor(request_string);
   // Extract the URI from the request.
