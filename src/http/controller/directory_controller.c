@@ -190,7 +190,7 @@ char *update_directory(struct HTTPServer *server, struct HTTPRequest *request)
 char *get_directory_children(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
-  char *id = request->body.search(&request->body, "directory_id", 13);
+  char *id = request->query.search(&request->query, "directory_id", 13);
   if (id == NULL)
   {
     return format_422();
@@ -202,13 +202,16 @@ char *get_directory_children(struct HTTPServer *server, struct HTTPRequest *requ
     return format_401();
   }
 
+  
   struct Directory *directory = directory_find_by_id(atol(id));
   if (directory == NULL)
   {
     return format_404();
   }
 
-  if (directory->get_group(directory)->is_member(directory->get_group(directory), user) != 1)
+  struct Group *group = directory->get_group(directory);
+
+  if (group->is_member(group, user) != 1)
   {
     return format_403();
   }
@@ -265,7 +268,7 @@ char *node_to_json(void *node)
 char *get_group_node_tree(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
-  char *id = request->body.search(&request->body, "group_id", 9);
+  char *id = request->query.search(&request->query, "group_id", 9);
   if (id == NULL)
   {
     return format_422();
@@ -299,6 +302,42 @@ char *get_group_node_tree(struct HTTPServer *server, struct HTTPRequest *request
   user_free(user);
   group_free(group);
   linked_list_destructor(children, NULL);
+
+  return format_200_with_content_type(json, "application/json");
+}
+
+char *get_directory_info(struct HTTPServer *server, struct HTTPRequest *request)
+{
+  (void)server;
+  char *id = request->query.search(&request->query, "directory_id", 13);
+  if (id == NULL)
+  {
+    return format_422();
+  }
+
+  struct User *user = get_user_from_request(request, NULL);
+  if (user == NULL)
+  {
+    return format_401();
+  }
+
+  struct Directory *directory = directory_find_by_id(atol(id));
+  if (directory == NULL)
+  {
+    return format_404();
+  }
+
+  struct Group *group = directory->get_group(directory);
+
+  if (group->is_member(group, user) != 1)
+  {
+    return format_403();
+  }
+
+  char *json = directory->to_json(directory);
+
+  user_free(user);
+  directory_free(directory);
 
   return format_200_with_content_type(json, "application/json");
 }

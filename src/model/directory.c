@@ -56,6 +56,11 @@ directory_new(const char *name, long user_id, long group_id, long *parent_id)
   directory->get_children = directory_get_children;
   directory->to_json = directory_json;
 
+  directory->_group = NULL;
+  directory->_children = NULL;
+  directory->_parent = NULL;
+  directory->_owner = NULL;
+
   return directory;
 }
 
@@ -143,11 +148,12 @@ int directory_save(struct Directory *directory)
     {
       return -1;
     }
-    directory->path = malloc(strlen(UPLOAD_DIR) + strlen(directory->name) + strlen(group->code) + 3);
-    sprintf(directory->path, "%s/%s/%s", UPLOAD_DIR, group->code, directory->name);
+    directory->path = malloc(strlen(directory->name) + strlen(group->code) + 2);
+    sprintf(directory->path, "%s/%s", group->code, directory->name);
   }
-
-  if (create_directory(directory->path))
+  char fullpath[1024];
+  sprintf(fullpath, "%s/%s", UPLOAD_DIR, directory->path);
+  if (create_directory(fullpath))
   {
     return -1;
   }
@@ -258,6 +264,7 @@ struct User *directory_get_owner(struct Directory *directory)
  */
 struct Group *directory_get_group(struct Directory *directory)
 {
+  printf("Into get group[directory]\n");
   if (directory->_group == NULL)
   {
     directory->_group = group_find_by_id(directory->group_id);
@@ -307,11 +314,11 @@ struct LinkedList *directory_get_children(struct Directory *directory)
  */
 char *directory_json(struct Directory *directory)
 {
-  directory->get_owner(directory);
   char *json = malloc(4096);
-  sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"owner\":%s,\"parent_id\":%ld,\"permission\":%d,\"created_at\":\"%s\",\"updated_at\":\"%s\"}",
-          directory->id, directory->name, directory->_owner->to_json(directory->_owner),
-          directory->parent_id != 0 ? directory->parent_id : 0, directory->permission, directory->created_at, directory->updated_at);
+  sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"path\":\"%s\",\"owner_id\":%ld,\"parent_id\":%ld,\"permission\":%d,\"group_id\":%ld,\"created_at\":\"%s\",\"updated_at\":\"%s\"}",
+          directory->id, directory->name, directory->path, directory->owner_id,
+          directory->parent_id != 0 ? directory->parent_id : 0, directory->permission,
+          directory->group_id, directory->created_at, directory->updated_at);
 
   return json;
 }

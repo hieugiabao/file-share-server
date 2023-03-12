@@ -124,9 +124,9 @@ char *get_user_info(struct HTTPServer *server, struct HTTPRequest *request)
   if (user_id == NULL)
     return format_422();
 
-  struct User *user = get_user_from_request(request, NULL);
+  struct User *user = user_find_by_id(atoi(user_id));
   if (user == NULL)
-    return format_400();
+    return format_404();
   
   char *res = user->to_json(user);
   user_free(user);

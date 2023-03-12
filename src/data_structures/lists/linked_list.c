@@ -309,7 +309,7 @@ char *to_json_ll(struct LinkedList *list, char *(*to_json)(void *data))
   {
     void *data = list->retrieve(list, i);
     char *data_json = to_json(data);
-    json = realloc(json, sizeof(char) * (strlen(json) + strlen(data_json) + 2));
+    json = realloc(json, sizeof(char) * (strlen(json) + strlen(data_json) + 10));
     strcat(json, data_json);
     if (i != list->length - 1)
     {
@@ -317,7 +317,7 @@ char *to_json_ll(struct LinkedList *list, char *(*to_json)(void *data))
     }
     free(data_json);
   }
-  json = realloc(json, sizeof(char) * (strlen(json) + 2));
+  json = realloc(json, sizeof(char) * (strlen(json) + 4));
   strcat(json, "]");
   return json;
 }

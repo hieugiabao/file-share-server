@@ -2,7 +2,6 @@
 #include "database/db.h"
 #include "model/directory.h"
 #include "utils/helper.h"
-#include "setting.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -143,14 +142,6 @@ int file_save(struct File *file)
   if (directory != NULL)
   {
     file->permission = directory->permission;
-    file->path = malloc(strlen(directory->path) + strlen(file->name) + 2);
-    sprintf(file->path, "%s/%s", directory->path, file->name);
-  }
-  else
-  {
-    struct Group *group = file->get_group(file);
-    file->path = malloc(strlen(file->name) + strlen(UPLOAD_DIR) + strlen(group->code) + 3);
-    sprintf(file->path, "%s/%s/%s", UPLOAD_DIR, group->code, file->name);
   }
 
   char query[] = "INSERT INTO files (name, size, permission, path, directory_id, group_id, owner_id, modified_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -332,4 +323,24 @@ void _get_file_callback(sqlite3_stmt *res, void *arg)
   file->updated_at = strdup((char *)sqlite3_column_text(res, 10));
 
   *(struct File **)arg = file;
+}
+
+struct File *file_find_by_name(const char *name, long group_id, long *directory_id)
+{
+  struct DatabaseManager *manager = get_db_manager();
+  struct DatabasePool *pool = manager->get_pool(manager, NULL);
+  if (pool == NULL)
+    return NULL;
+
+  char query[] = "SELECT * FROM files WHERE name = ? AND group_id = ? AND directory_id = ?";
+  struct File *file = NULL;
+  int res = pool->exec(pool, _get_file_callback, &file, query, 3, name, convert_long_to_string(group_id),
+                       directory_id != NULL ? convert_long_to_string(*directory_id) : NULL);
+
+  if (res != SQLITE_OK)
+  {
+    return NULL;
+  }
+
+  return file;
 }

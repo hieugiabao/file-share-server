@@ -374,10 +374,12 @@ char *get_my_groups(struct HTTPServer *server, struct HTTPRequest *request)
   }
 
   struct LinkedList *groups = group_find_by_member(user->id);
+  printf("oke1\n");
   char *response = groups->to_json(groups, (char *(*)(void *))group_to_json);
-
+  printf("oke2\n");
   user_free(user);
+  printf("oke3\n");
   linked_list_destructor(groups, (void (*)(void *))group_free);
-
+  printf("oke4\n");
   return format_200_with_content_type(response, "application/json");
 }

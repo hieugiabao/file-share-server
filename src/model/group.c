@@ -310,8 +310,10 @@ struct LinkedList *group_get_members(struct Group *group)
  */
 char *group_to_json(struct Group *group)
 {
-  char *json = malloc(sizeof(char) * 1024);
-  sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"description\":\"%s\",\"avatar\":\"%s\",\"status\":%d,\"code\": \"%s\",\"owner_id\":%ld,\"created_at\":\"%s\"}", group->id, group->name, group->description ? group->description : "", group->avatar ? group->avatar : "", group->status, group->code, group->owner_id, group->created_at);
+  printf("Info group_to_json\n");
+  char *json = malloc(sizeof(char) * 4096);
+  sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"description\":\"%s\",\"avatar\":\"%s\",\"status\":%d,\"code\": \"%s\",\"owner_id\":%ld,\"created_at\":\"%s\"}", group->id, group->name, group->description != NULL ? group->description : "", group->avatar != NULL ? group->avatar : "", group->status, group->code, group->owner_id, group->created_at);
+  printf("Done group_to_json\n");
   return json;
 }
 
@@ -400,6 +402,7 @@ void _get_group_callback(sqlite3_stmt *res, void *arg)
 
   group->status = sqlite3_column_int(res, 4);
   group->code = strdup((char *)sqlite3_column_text(res, 6));
+  group->created_at = strdup((char*)sqlite3_column_text(res, 7));
 
   *(struct Group **)arg = group;
 }
@@ -441,7 +444,7 @@ struct Group *group_find_by_id(long id)
   if (pool == NULL)
     return NULL;
 
-  char *query = "SELECT id, name, description, avatar, status, owner_id, code FROM groups WHERE id = ?";
+  char *query = "SELECT id, name, description, avatar, status, owner_id, code, created_at FROM groups WHERE id = ?";
 
   struct Group *group = NULL;
 
@@ -512,7 +515,7 @@ struct LinkedList *group_find_by_member(long member_id)
   if (pool == NULL)
     return NULL;
 
-  char *query = "SELECT groups.id, name, description, avatar, status, owner_id, code FROM groups INNER JOIN group_members ON groups.id = group_members.group_id WHERE user_id = ?";
+  char *query = "SELECT groups.id, name, description, avatar, status, owner_id, code, groups.created_at FROM groups INNER JOIN group_members ON groups.id = group_members.group_id WHERE user_id = ?";
 
   struct LinkedList groups = linked_list_constructor();
   struct LinkedList *groups_ptr = malloc(sizeof(struct LinkedList));

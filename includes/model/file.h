@@ -47,5 +47,6 @@ struct File *file_new(char *fullname, long size, long user_id, long group_id, lo
 void file_free(struct File *file);
 struct File *file_find_by_id(long id);
 char *file_to_json(struct File *file);
+struct File *file_find_by_name(const char *name, long group_id, long *directory_id);
 
 #endif

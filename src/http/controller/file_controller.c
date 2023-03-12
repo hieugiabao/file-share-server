@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 /**
  * It creates a file
@@ -19,11 +20,11 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
   char *name = request->body.search(&request->body, "name", 5);
-  char *size = request->body.search(&request->body, "size", 5);
+  // char *size = request->body.search(&request->body, "size", 5);
   char *group_id = request->body.search(&request->body, "group_id", 9);
   char *directory_id = request->body.search(&request->body, "directory_id", 13);
 
-  if (name == NULL || group_id == NULL || size == NULL)
+  if (name == NULL || group_id == NULL)
   {
     return format_422();
   }
@@ -62,25 +63,44 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
     }
     directory_free(directory);
   }
-  struct File *file = file_new(
+
+  struct File *file = file_find_by_name(name, group->id, directory_id_ptr);
+  if (file != NULL)
+  {
+    group_free(group);
+    user_free(user);
+    file_free(file);
+  return format_409();
+  }
+
+  file = file_new(
       name,
-      atol(size),
+      0,
       user->id,
       group->id,
       directory_id_ptr);
   free(directory_id_ptr);
+
+  struct Directory *directory = file->get_directory(file);
+  if (directory != NULL)
+  {
+    file->path = malloc(strlen(directory->path) + strlen(file->name) + 2);
+    sprintf(file->path, "%s/%s", directory->path, file->name);
+  }
+  else
+  {
+    struct Group *group = file->get_group(file);
+    file->path = malloc(strlen(file->name) + strlen(group->code) + 2);
+    sprintf(file->path, "%s/%s", group->code, file->name);
+  }
 
   if (file == NULL)
   {
     return format_500();
   }
 
-  if (file->save(file) != 0)
-  {
-    return format_500();
-  }
-
-  char *json = file->to_json(file);
+  char json[4096];
+  sprintf(json, "{\"path\": %s}", file->path);
 
   file_free(file);
   user_free(user);
@@ -264,4 +284,54 @@ char *get_file(struct HTTPServer *server, struct HTTPRequest *request)
   group_free(group);
 
   return format_200_with_content_type(json, "application/json");
+}
+
+char *save_file(struct HTTPServer *server, struct HTTPRequest *request)
+{
+  (void)server;
+  char *name = request->body.search(&request->body, "name", 5);
+  char *size = request->body.search(&request->body, "size", 5);
+  char *path = request->body.search(&request->body, "path", 5);
+  char *group_id = request->body.search(&request->body, "group_id", 9);
+  char *directory_id = request->body.search(&request->body, "directory_id", 13);
+
+  if (name == NULL || size == NULL || path == NULL || group_id == NULL)
+  {
+    return format_422();
+  }
+
+  struct User *user = get_user_from_request(request, NULL);
+  if (user == NULL)
+  {
+    return format_401();
+  }
+
+  // check file path exists
+  if (access(path, F_OK) != 0)
+  {
+    return format_400();
+  }
+
+  struct File *file = file_new(
+      name,
+      atol(size),
+      user->id,
+      atol(group_id),
+      NULL);
+  file->path = strdup(path);
+  file->directory_id = directory_id == NULL ? 0 : atol(directory_id);
+  if (file->save(file) != 0)
+  {
+    // remvoe file
+    remove(path);
+
+    user_free(user);
+    file_free(file);
+    return format_500();
+  }
+
+  user_free(user);
+  file_free(file);
+
+  return format_200();
 }

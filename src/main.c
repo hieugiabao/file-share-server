@@ -122,8 +122,10 @@ void *http_init_handler(void *arg)
   http_server->register_routes(http_server, delete_directory, "/directory/delete", 1, DELETE);
   http_server->register_routes(http_server, update_directory, "/directory/update", 1, PUT);
   http_server->register_routes(http_server, get_directory_children, "/directory/getchild", 1, GET);
+  http_server->register_routes(http_server, get_directory_info, "/directory/info", 1, GET);
 
   http_server->register_routes(http_server, create_file, "/file/create", 1, POST);
+  http_server->register_routes(http_server, save_file, "/file/save", 1, POST);
   http_server->register_routes(http_server, delete_file, "/file/delete", 1, DELETE);
   http_server->register_routes(http_server, update_file, "/file/update", 1, PUT);
   http_server->register_routes(http_server, get_file, "/file/info", 1, GET);
