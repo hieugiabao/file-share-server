@@ -154,8 +154,19 @@ void *http_handler(void *arg)
   // Cast the argument back to a ClientServer struct.
   struct ClientServer *client_server = (struct ClientServer *)arg;
   // Read the client's request.
-  char request_string[30000];
-  read(client_server->client, request_string, 30000);
+  char request_string[60000];
+  // int bytes_received = 0;
+  // while (recv(client_server->client, request_string, 60000, 0) > 0)
+  //   bytes_received += strlen(request_string);
+  ssize_t byte_received = recv(client_server->client, request_string, 60000, 0);
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = 50000;
+  setsockopt(client_server->client, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+  while ((byte_received = recv(client_server->client, request_string+byte_received, 60000, 0)) > 0)
+  {
+    log_trace("Received more %ld bytes", byte_received);
+  }
   log_trace("Request: %s", request_string);
   // Parse the request string into a usable format.
   struct HTTPRequest request = http_request_constructor(request_string);

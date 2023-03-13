@@ -140,7 +140,7 @@ char *delete_directory(struct HTTPServer *server, struct HTTPRequest *request)
 char *update_directory(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
-  char *id = request->body.search(&request->body, "directory_id", 3);
+  char *id = request->body.search(&request->body, "directory_id", 13);
   char *permission = request->body.search(&request->body, "permission", 11);
 
   if (id == NULL || permission == NULL)

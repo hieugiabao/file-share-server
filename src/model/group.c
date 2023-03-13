@@ -310,10 +310,8 @@ struct LinkedList *group_get_members(struct Group *group)
  */
 char *group_to_json(struct Group *group)
 {
-  printf("Info group_to_json\n");
   char *json = malloc(sizeof(char) * 4096);
   sprintf(json, "{\"id\":%ld,\"name\":\"%s\",\"description\":\"%s\",\"avatar\":\"%s\",\"status\":%d,\"code\": \"%s\",\"owner_id\":%ld,\"created_at\":\"%s\"}", group->id, group->name, group->description != NULL ? group->description : "", group->avatar != NULL ? group->avatar : "", group->status, group->code, group->owner_id, group->created_at);
-  printf("Done group_to_json\n");
   return json;
 }
 
@@ -357,6 +355,8 @@ int group_has_directory(struct Group *group, long directory_id)
 
   if (res != SQLITE_OK)
     return -1;
+
+  printf("has_dir: %d\n", has_dir);
 
   return has_dir;
 }
@@ -470,7 +470,7 @@ struct Group *group_find_by_name(char *name)
   if (pool == NULL)
     return NULL;
 
-  char *query = "SELECT id, name, description, avatar, status, owner_id, code FROM groups WHERE name = ?";
+  char *query = "SELECT id, name, description, avatar, status, owner_id, code, created_at FROM groups WHERE name = ?";
 
   struct Group *group = NULL;
 
@@ -496,7 +496,7 @@ struct Group *group_find_by_code(char *code)
   if (pool == NULL)
     return NULL;
 
-  char *query = "SELECT id, name, description, avatar, status, owner_id, code FROM groups WHERE code = ?";
+  char *query = "SELECT id, name, description, avatar, status, owner_id, code, created_at FROM groups WHERE code = ?";
 
   struct Group *group = NULL;
 

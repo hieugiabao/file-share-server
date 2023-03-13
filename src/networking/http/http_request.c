@@ -170,7 +170,7 @@ void extract_body(struct HTTPRequest *request, char *body)
       {
         value++;
       }
-      body_dict.insert(&body_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
+      body_dict.insert(&body_dict, key, sizeof(char[strlen(key)+1]), value, sizeof(char[strlen(value)+1]));
       fields.pop(&fields, NULL);
       field = fields.peek(&fields);
     }
@@ -200,7 +200,7 @@ void extract_request_query(struct HTTPRequest *request, char *query_string)
     {
       value++;
     }
-    query_dict.insert(&query_dict, key, sizeof(char[strlen(key)]), value, sizeof(char[strlen(value)]));
+    query_dict.insert(&query_dict, key, sizeof(char[strlen(key)+1]), value, sizeof(char[strlen(value)+1]));
     fields.pop(&fields, NULL);
     field = fields.peek(&fields);
   }

@@ -20,6 +20,7 @@
 ._*
 
 upload/
+.cache/
 test.db
 test.sqlite
 !libs/*.a

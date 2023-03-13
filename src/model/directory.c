@@ -176,8 +176,12 @@ int directory_save(struct Directory *directory)
     remove_directory(directory->path);
     return -1;
   }
+  char *current_time = get_current_time();
   directory->id = sqlite3_last_insert_rowid(pool->db);
+  directory->created_at = strdup(current_time);
 
+  free(current_time);
+  
   return 0;
 }
 

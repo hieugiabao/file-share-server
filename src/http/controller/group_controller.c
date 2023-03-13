@@ -213,7 +213,7 @@ char *join_group(struct HTTPServer *server, struct HTTPRequest *request)
 {
   (void)server;
 
-  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")]));
+  char *code = request->body.search(&request->body, "code", sizeof(char[strlen("code")+1]));
 
   if (code == NULL)
   {
@@ -244,10 +244,12 @@ char *join_group(struct HTTPServer *server, struct HTTPRequest *request)
     return format_500();
   }
 
+  char *response = group->to_json(group);
+
   group_free(group);
   user_free(user);
 
-  return format_200();
+  return format_200_with_content_type(response, "application/json");
 }
 
 /**
@@ -374,12 +376,8 @@ char *get_my_groups(struct HTTPServer *server, struct HTTPRequest *request)
   }
 
   struct LinkedList *groups = group_find_by_member(user->id);
-  printf("oke1\n");
   char *response = groups->to_json(groups, (char *(*)(void *))group_to_json);
-  printf("oke2\n");
   user_free(user);
-  printf("oke3\n");
   linked_list_destructor(groups, (void (*)(void *))group_free);
-  printf("oke4\n");
   return format_200_with_content_type(response, "application/json");
 }

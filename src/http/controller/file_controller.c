@@ -56,7 +56,7 @@ char *create_file(struct HTTPServer *server, struct HTTPRequest *request)
     directory_id_ptr = malloc(sizeof(long));
     *directory_id_ptr = atol(directory_id);
     struct Directory *directory = directory_find_by_id(*directory_id_ptr);
-    if (directory == NULL || group->has_directory(group, *directory_id_ptr) != 1 || (directory->permission == READ && (user->id != directory->owner_id || user->id != group->owner_id)))
+    if (directory == NULL || group->has_directory(group, *directory_id_ptr) != 1 || (directory->permission == READ && user->id != directory->owner_id && user->id != group->owner_id))
     {
       group_free(group);
       user_free(user);
@@ -291,7 +291,6 @@ char *save_file(struct HTTPServer *server, struct HTTPRequest *request)
   // check file path exists
   if (access(fullpath, F_OK) != 0)
   {
-    printf("Not oke: %s\n", fullpath);
     return format_400();
   }
 

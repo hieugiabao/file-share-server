@@ -162,7 +162,12 @@ int file_save(struct File *file)
   {
     return -1;
   }
+  char *current_time = get_current_time();
   file->id = sqlite3_last_insert_rowid(pool->db);
+  file->created_at = strdup(current_time);
+  file->updated_at = strdup(current_time);
+
+  free(current_time);
 
   return 0;
 }
